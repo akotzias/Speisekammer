@@ -4,7 +4,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, deleteDoc, setDoc, updateDoc,
-  onSnapshot, query, orderBy, serverTimestamp
+  onSnapshot, query, orderBy, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { createZutatCombobox, zutatKey } from "./zutat-combobox.js";
@@ -58,6 +58,7 @@ let zutaten = [];            // [{id, name, nameKey, unit}] sorted by name (de)
 let currentPlan = null;      // {days:[{label, recipeId}]}
 let recipesById = new Map();
 let zutatenById = new Map();
+let recipesLoaded = false;   // guards every usage-count decision
 let editingId = null;        // recipe being edited, or null when adding
 let editingZutatId = null;   // Zutat being edited, or null when adding
 
@@ -102,6 +103,7 @@ function startSubscriptions() {
   onSnapshot(recipesQuery, (snap) => {
     recipes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     recipesById = new Map(recipes.map((r) => [r.id, r]));
+    recipesLoaded = true;
     renderRecipes();
     renderZutaten();       // usage counts come from recipes
     renderPlan();
@@ -442,9 +444,80 @@ async function createZutat(rawName, unit) {
   }
 }
 
+// Repoints every reference to sourceId at targetId, collapsing the two
+// rows into one when a recipe listed both Zutaten. Order is preserved.
+function repointIngredients(ingredients, sourceId, targetId) {
+  const out = [];
+  const seen = new Map();
+  (ingredients || []).forEach((ing) => {
+    const zutatId = ing.zutatId === sourceId ? targetId : ing.zutatId;
+    const amount = toAmount(ing.amount);
+    const existing = seen.get(zutatId);
+    if (existing) {
+      existing.amount = existing.amount === null && amount === null
+        ? null
+        : (existing.amount || 0) + (amount || 0);
+    } else {
+      const entry = { zutatId, amount };
+      seen.set(zutatId, entry);
+      out.push(entry);
+    }
+  });
+  return out;
+}
+
+// Renaming a Zutat onto an existing name is a merge request: every
+// recipe referencing the source is repointed at the target, then the
+// source is deleted. One batch, so it cannot half-apply.
+async function mergeZutaten(source, target) {
+  if (!recipesLoaded) {
+    alert("Rezepte sind noch nicht geladen. Bitte kurz warten.");
+    return false;
+  }
+
+  const affected = recipes.filter((r) =>
+    (r.ingredients || []).some((i) => i.zutatId === source.id));
+
+  const lines = [
+    affected.length === 0
+      ? `\u2022 kein Rezept ist betroffen`
+      : `\u2022 ${affected.length === 1 ? "1 Rezept wird" : affected.length + " Rezepte werden"} auf \u201e${target.name}" umgestellt`,
+    `\u2022 \u201e${source.name}" wird gel\u00f6scht`
+  ];
+  if (normalizeUnit(source.unit) !== normalizeUnit(target.unit)) {
+    const from = formatUnit(source.unit) || "keine Einheit";
+    const to = formatUnit(target.unit) || "keine Einheit";
+    lines.push(`\u2022 Achtung: ${from} \u2192 ${to}. Mengen werden NICHT umgerechnet.`);
+  }
+
+  if (!confirm(
+    `\u201e${source.name}" mit \u201e${target.name}" zusammenf\u00fchren?\n\n${lines.join("\n")}`
+  )) return false;
+
+  try {
+    const batch = writeBatch(db);
+    affected.forEach((r) => {
+      batch.update(doc(db, "recipes", r.id), {
+        ingredients: repointIngredients(r.ingredients, source.id, target.id)
+      });
+    });
+    batch.delete(doc(db, "zutaten", source.id));
+    await batch.commit();
+    return true;
+  } catch (err) {
+    console.error(err);
+    alert("Zusammenf\u00fchren fehlgeschlagen. Pr\u00fcft eure Internetverbindung.");
+    return false;
+  }
+}
+
 async function saveZutatEdit(zutatId, rawName, unit) {
   const zutat = zutatenById.get(zutatId);
   if (!zutat) return false;
+  if (!recipesLoaded) {
+    alert("Rezepte sind noch nicht geladen. Bitte kurz warten.");
+    return false;
+  }
 
   const name = (rawName || "").trim();
   const key = zutatKey(name);
@@ -454,10 +527,7 @@ async function saveZutatEdit(zutatId, rawName, unit) {
   }
 
   const clash = zutaten.find((z) => z.id !== zutatId && zutatKey(z.name) === key);
-  if (clash) {
-    alert(`„${clash.name}" gibt es schon.`);
-    return false;
-  }
+  if (clash) return await mergeZutaten(zutat, clash);
 
   const nextUnit = normalizeUnit(unit);
   if (nextUnit !== normalizeUnit(zutat.unit)) {
@@ -484,6 +554,10 @@ async function saveZutatEdit(zutatId, rawName, unit) {
 }
 
 function deleteZutat(zutat) {
+  if (!recipesLoaded) {
+    alert("Rezepte sind noch nicht geladen. Bitte kurz warten.");
+    return;
+  }
   const used = zutatUsageCount(zutat.id);
   if (used > 0) {
     const where = used === 1 ? "1 Rezept" : `${used} Rezepten`;
@@ -516,10 +590,13 @@ function renderZutaten() {
       li.appendChild(unit);
     }
 
-    const used = zutatUsageCount(z.id);
+    const used = recipesLoaded ? zutatUsageCount(z.id) : 0;
     const usage = document.createElement("span");
     usage.className = "zutat-item__usage";
-    if (used === 0) {
+    if (!recipesLoaded) {
+      usage.classList.add("zutat-item__usage--unused");
+      usage.textContent = "…";
+    } else if (used === 0) {
       usage.classList.add("zutat-item__usage--unused");
       usage.textContent = "ungenutzt";
     } else {
@@ -530,12 +607,14 @@ function renderZutaten() {
     editBtn.className = "icon-btn";
     editBtn.setAttribute("aria-label", `${z.name} bearbeiten`);
     editBtn.textContent = "✎";
+    editBtn.disabled = !recipesLoaded;
     editBtn.addEventListener("click", () => startEditZutat(z));
 
     const delBtn = document.createElement("button");
     delBtn.className = "icon-btn icon-btn--danger";
     delBtn.setAttribute("aria-label", `${z.name} löschen`);
     delBtn.textContent = "🗑";
+    delBtn.disabled = !recipesLoaded;
     delBtn.addEventListener("click", () => deleteZutat(z));
 
     li.prepend(name);

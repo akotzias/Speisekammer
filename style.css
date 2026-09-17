@@ -204,6 +204,8 @@ body{
 }
 .icon-btn:hover{ color: var(--ink); background: rgba(201,76,50,.08); }
 .icon-btn--danger:hover{ color: var(--clay); }
+.icon-btn:disabled{ opacity: .35; cursor: default; }
+.icon-btn:disabled:hover{ color: var(--ink-faint); background: none; }
 
 /* ---------------- Form ---------------- */
 .add-recipe{ margin-top: 10px; }
