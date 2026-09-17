@@ -47,21 +47,8 @@
             <input type="text" id="recipeName" placeholder="z. B. Omelette" required>
           </label>
 
-          <div class="ingredients-editor" id="ingredientsEditor">
-            <div class="ingredient-row">
-              <input type="number" step="0.25" min="0" placeholder="Menge" class="ing-amount">
-              <select class="ing-unit" aria-label="Einheit">
-                <option value="">keine Einheit</option>
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-                <option value="ml">ml</option>
-                <option value="l">l</option>
-                <option value="stk">Stück</option>
-              </select>
-              <input type="text" placeholder="Zutat" class="ing-name" required>
-              <button type="button" class="row-remove" aria-label="Zutat entfernen">×</button>
-            </div>
-          </div>
+          <!-- rows are built by app.js (newIngredientRow) -->
+          <div class="ingredients-editor" id="ingredientsEditor"></div>
 
           <button type="button" id="addIngredientRow" class="btn btn--ghost btn--small">+ Zutat</button>
 
@@ -95,6 +82,27 @@
       </div>
       <p class="empty-note" id="shoppingEmpty">Erscheint, sobald ein Plan gewürfelt wurde.</p>
       <ul class="shopping-list" id="shoppingList"><!-- filled by JS --></ul>
+    </section>
+
+    <!-- ZUTATEN CATALOG -->
+    <section class="panel" aria-labelledby="zutaten-heading">
+      <div class="panel__head">
+        <h2 id="zutaten-heading">Zutaten</h2>
+        <span class="count" id="zutatCount">0</span>
+      </div>
+
+      <form id="zutatForm" class="zutat-form">
+        <input type="text" id="zutatName" placeholder="Neue Zutat, z. B. Ei" required>
+        <select id="zutatUnit" aria-label="Einheit">
+          <!-- filled by JS from UNIT_OPTIONS -->
+        </select>
+        <button type="submit" class="btn btn--primary btn--small" id="zutatSubmit">Hinzufügen</button>
+        <button type="button" class="btn btn--ghost btn--small" id="zutatCancel" hidden>Abbrechen</button>
+      </form>
+
+      <p class="empty-note" id="zutatEmpty">Noch keine Zutaten. Leg oben die erste an.</p>
+
+      <ul class="zutat-list" id="zutatenList"><!-- filled by JS --></ul>
     </section>
 
   </main>

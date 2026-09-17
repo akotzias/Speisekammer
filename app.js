@@ -7,6 +7,7 @@ import {
   onSnapshot, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { createZutatCombobox, zutatKey } from "./zutat-combobox.js";
 
 const DAY_LABELS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 const UNIT_OPTIONS = [
@@ -33,32 +34,32 @@ function setSyncState(state, label) {
   syncLabel.textContent = label;
 }
 
-if (firebaseConfig.apiKey === "REPLACE_ME") {
-  setSyncState("offline", "kein Firebase-Projekt verbunden");
-  console.warn(
-    "firebase-config.js enthält noch Platzhalter-Werte. " +
-    "Siehe README.md, um ein eigenes (kostenloses) Firebase-Projekt zu verbinden."
-  );
-} else {
-  setSyncState("offline", "verbinde…");
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      setSyncState("online", "synchronisiert");
-      startSubscriptions();
-    }
-  });
-  signInAnonymously(auth).catch((err) => {
-    console.error(err);
-    setSyncState("offline", "Verbindung fehlgeschlagen");
-  });
-}
+setSyncState("offline", "verbinde…");
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    setSyncState("online", "synchronisiert");
+    startSubscriptions();
+  }
+});
+signInAnonymously(auth).catch((err) => {
+  console.error(err);
+  setSyncState("offline", "Verbindung fehlgeschlagen");
+});
 
 // ---------------------------------------------------------------
 // State
+//
+// Recipes reference Zutaten by id, and the plan references recipes by
+// id. Nothing is denormalized, so a rename or a deletion propagates on
+// the next snapshot without any reconciliation code.
 // ---------------------------------------------------------------
-let recipes = []; // [{id, name, ingredients:[{name, amount, unit}]}]
-let currentPlan = null; // {days:[{label, recipeId, recipeName, ingredients}]}
-let editingId = null; // id of the recipe currently being edited, or null when adding
+let recipes = [];            // [{id, name, ingredients:[{zutatId, amount}]}]
+let zutaten = [];            // [{id, name, nameKey, unit}] sorted by name (de)
+let currentPlan = null;      // {days:[{label, recipeId}]}
+let recipesById = new Map();
+let zutatenById = new Map();
+let editingId = null;        // recipe being edited, or null when adding
+let editingZutatId = null;   // Zutat being edited, or null when adding
 
 // ---------------------------------------------------------------
 // DOM refs
@@ -79,6 +80,15 @@ const ingredientsEditor = document.getElementById("ingredientsEditor");
 const addIngredientRowBtn = document.getElementById("addIngredientRow");
 const cancelRecipeBtn = document.getElementById("cancelRecipe");
 
+const zutatenListEl = document.getElementById("zutatenList");
+const zutatEmptyEl = document.getElementById("zutatEmpty");
+const zutatCountEl = document.getElementById("zutatCount");
+const zutatForm = document.getElementById("zutatForm");
+const zutatNameInput = document.getElementById("zutatName");
+const zutatUnitSelect = document.getElementById("zutatUnit");
+const zutatSubmitBtn = document.getElementById("zutatSubmit");
+const zutatCancelBtn = document.getElementById("zutatCancel");
+
 // ---------------------------------------------------------------
 // Firestore subscriptions (started once auth is ready, so the first
 // reads carry a valid auth token and don't trip the security rules)
@@ -91,15 +101,57 @@ function startSubscriptions() {
   const recipesQuery = query(collection(db, "recipes"), orderBy("name"));
   onSnapshot(recipesQuery, (snap) => {
     recipes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    recipesById = new Map(recipes.map((r) => [r.id, r]));
     renderRecipes();
+    renderZutaten();       // usage counts come from recipes
+    renderPlan();
+    renderShoppingList();
     updateGenerateAvailability();
   }, (err) => console.error("recipes onSnapshot", err));
+
+  // Sorted client-side: Firestore's orderBy compares UTF-8 bytes, which
+  // would put "Äpfel" after "Zucker".
+  onSnapshot(collection(db, "zutaten"), (snap) => {
+    zutaten = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"));
+    zutatenById = new Map(zutaten.map((z) => [z.id, z]));
+    renderZutaten();
+    renderRecipes();       // ingredient labels
+    renderShoppingList();
+    refreshIngredientRows();
+  }, (err) => console.error("zutaten onSnapshot", err));
 
   onSnapshot(doc(db, "plan", "current"), (snap) => {
     currentPlan = snap.exists() ? snap.data() : null;
     renderPlan();
     renderShoppingList();
   }, (err) => console.error("plan onSnapshot", err));
+}
+
+// ---------------------------------------------------------------
+// Units
+// ---------------------------------------------------------------
+function normalizeUnit(unit) {
+  const raw = (unit || "").trim();
+  const lower = raw.toLowerCase();
+  if (["", "keine einheit"].includes(lower)) return "";
+  if (["stück", "stueck", "stk"].includes(lower)) return "stk";
+  return UNIT_OPTIONS.some((option) => option.value === lower) ? lower : "";
+}
+
+// The empty unit renders as nothing. "keine Einheit" is a <select>
+// label and must never leak into a recipe or the shopping list.
+function formatUnit(unit) {
+  const normalized = normalizeUnit(unit);
+  if (!normalized) return "";
+  return UNIT_OPTIONS.find((option) => option.value === normalized)?.label || "";
+}
+
+function toAmount(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const n = typeof value === "number" ? value : parseFloat(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 // ---------------------------------------------------------------
@@ -160,25 +212,22 @@ function renderRecipes() {
 }
 
 function formatIngredient(ing) {
+  const zutat = zutatenById.get(ing.zutatId);
   const parts = [];
-  if (ing.amount !== null && ing.amount !== undefined && ing.amount !== "") parts.push(ing.amount);
-  const unit = formatUnit(ing.unit);
+  const amount = toAmount(ing.amount);
+  if (amount !== null) parts.push(formatAmount(amount));
+  if (!zutat) {
+    parts.push("Unbekannte Zutat");
+    return parts.join(" ");
+  }
+  const unit = formatUnit(zutat.unit);
   if (unit) parts.push(unit);
-  parts.push(ing.name);
+  parts.push(zutat.name);
   return parts.join(" ");
 }
 
-function normalizeUnit(unit) {
-  const raw = (unit || "").trim();
-  const lower = raw.toLowerCase();
-  if (["", "keine einheit"].includes(lower)) return "";
-  if (["stück", "stueck", "stk"].includes(lower)) return "stk";
-  return UNIT_OPTIONS.some((option) => option.value === lower) ? lower : "";
-}
-
-function formatUnit(unit) {
-  const normalized = normalizeUnit(unit);
-  return UNIT_OPTIONS.find((option) => option.value === normalized)?.label || "";
+function formatAmount(n) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 // ---------------------------------------------------------------
@@ -198,10 +247,18 @@ function renderPlan() {
     const label = document.createElement("span");
     label.className = "day-row__label";
     label.textContent = d.label;
-    const recipe = document.createElement("span");
-    recipe.className = "day-row__recipe";
-    recipe.textContent = d.recipeName;
-    li.append(label, recipe);
+
+    const recipeEl = document.createElement("span");
+    recipeEl.className = "day-row__recipe";
+    const recipe = recipesById.get(d.recipeId);
+    if (recipe) {
+      recipeEl.textContent = recipe.name;
+    } else {
+      recipeEl.textContent = "Rezept gelöscht";
+      recipeEl.classList.add("day-row__recipe--missing");
+    }
+
+    li.append(label, recipeEl);
     dayListEl.appendChild(li);
   });
 }
@@ -235,23 +292,25 @@ function renderShoppingList() {
   });
 }
 
+// Aggregates by Zutat id. Because a Zutat owns exactly one unit and one
+// spelling, "Ei" can no longer split across rows.
 function aggregateIngredients(days) {
   const map = new Map();
   days.forEach((d) => {
-    (d.ingredients || []).forEach((ing) => {
-      const name = (ing.name || "").trim();
-      if (!name) return;
-      const unit = normalizeUnit(ing.unit);
-      const key = name.toLowerCase() + "|" + unit.toLowerCase();
-      const amount = ing.amount === "" || ing.amount === null || ing.amount === undefined
-        ? null
-        : parseFloat(ing.amount);
+    const recipe = recipesById.get(d.recipeId);
+    if (!recipe) return;
+    (recipe.ingredients || []).forEach((ing) => {
+      const zutat = zutatenById.get(ing.zutatId);
+      if (!zutat) return;
 
-      if (!map.has(key)) {
-        map.set(key, { name, unit, amount: 0, hasAmount: false, plainCount: 0 });
+      if (!map.has(ing.zutatId)) {
+        map.set(ing.zutatId, {
+          name: zutat.name, unit: zutat.unit, amount: 0, hasAmount: false, plainCount: 0
+        });
       }
-      const entry = map.get(key);
-      if (amount !== null && !isNaN(amount)) {
+      const entry = map.get(ing.zutatId);
+      const amount = toAmount(ing.amount);
+      if (amount !== null) {
         entry.amount += amount;
         entry.hasAmount = true;
       } else {
@@ -264,8 +323,7 @@ function aggregateIngredients(days) {
     .map((entry) => {
       const segments = [];
       if (entry.hasAmount) {
-        const amountStr = Number.isInteger(entry.amount) ? entry.amount : entry.amount.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-        segments.push([amountStr, formatUnit(entry.unit)].filter(Boolean).join(" "));
+        segments.push([formatAmount(entry.amount), formatUnit(entry.unit)].filter(Boolean).join(" "));
       }
       if (entry.plainCount > 0 && (entry.hasAmount || entry.plainCount > 1)) {
         segments.push(`${entry.plainCount}×`);
@@ -288,14 +346,11 @@ generateBtn.addEventListener("click", async () => {
   generateBtn.disabled = true;
   generateBtn.textContent = "Würfle…";
 
+  // Only the id is stored: names and ingredients are resolved at render
+  // time, so edits and deletions show up immediately.
   const days = DAY_LABELS.map((label) => {
     const choice = recipes[Math.floor(Math.random() * recipes.length)];
-    return {
-      label,
-      recipeId: choice.id,
-      recipeName: choice.name,
-      ingredients: choice.ingredients || []
-    };
+    return { label, recipeId: choice.id };
   });
 
   try {
@@ -310,37 +365,295 @@ generateBtn.addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------
+// Zutaten catalog
+// ---------------------------------------------------------------
+UNIT_OPTIONS.forEach((option) => {
+  const el = document.createElement("option");
+  el.value = option.value;
+  el.textContent = option.label;
+  zutatUnitSelect.appendChild(el);
+});
+
+function zutatUsageCount(zutatId) {
+  return recipes.filter((r) => (r.ingredients || []).some((i) => i.zutatId === zutatId)).length;
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length || !b.length) return Math.max(a.length, b.length);
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i];
+    for (let j = 1; j <= b.length; j++) {
+      curr[j] = Math.min(
+        prev[j] + 1,
+        curr[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+    prev = curr;
+  }
+  return prev[b.length];
+}
+
+// Soft duplicate check: catches Ei/Eier and Nudel/Nudeln at the moment
+// of creation. Advisory only — the user can override.
+function findSimilarZutaten(key) {
+  return zutaten.filter((z) => {
+    const other = zutatKey(z.name);
+    if (!other || other === key) return false;
+    if (other.length >= 2 && key.length >= 2 && (other.startsWith(key) || key.startsWith(other))) return true;
+    return levenshtein(other, key) <= 1;
+  });
+}
+
+async function createZutat(rawName, unit) {
+  const name = (rawName || "").trim();
+  const key = zutatKey(name);
+  if (!key) {
+    alert("Bitte einen Zutatennamen eingeben.");
+    return null;
+  }
+
+  const existing = zutaten.find((z) => zutatKey(z.name) === key);
+  if (existing) {
+    alert(`„${existing.name}" gibt es schon.`);
+    return null;
+  }
+
+  const similar = findSimilarZutaten(key);
+  if (similar.length) {
+    const names = similar.map((z) => `„${z.name}"`).join(", ");
+    if (!confirm(`Ähnlich vorhanden: ${names}.\n\n„${name}" trotzdem anlegen?`)) return null;
+  }
+
+  try {
+    const ref = await addDoc(collection(db, "zutaten"), {
+      name,
+      nameKey: key,
+      unit: normalizeUnit(unit),
+      createdAt: serverTimestamp()
+    });
+    return ref.id;
+  } catch (err) {
+    console.error(err);
+    alert("Zutat konnte nicht gespeichert werden. Prüft eure Internetverbindung.");
+    return null;
+  }
+}
+
+async function saveZutatEdit(zutatId, rawName, unit) {
+  const zutat = zutatenById.get(zutatId);
+  if (!zutat) return false;
+
+  const name = (rawName || "").trim();
+  const key = zutatKey(name);
+  if (!key) {
+    alert("Bitte einen Zutatennamen eingeben.");
+    return false;
+  }
+
+  const clash = zutaten.find((z) => z.id !== zutatId && zutatKey(z.name) === key);
+  if (clash) {
+    alert(`„${clash.name}" gibt es schon.`);
+    return false;
+  }
+
+  const nextUnit = normalizeUnit(unit);
+  if (nextUnit !== normalizeUnit(zutat.unit)) {
+    const used = zutatUsageCount(zutatId);
+    if (used > 0) {
+      const from = formatUnit(zutat.unit) || "keine Einheit";
+      const to = formatUnit(nextUnit) || "keine Einheit";
+      const where = used === 1 ? "1 Rezept" : `${used} Rezepten`;
+      if (!confirm(
+        `Einheit von „${zutat.name}" von ${from} auf ${to} ändern?\n\n` +
+        `Die Mengen in ${where} werden NICHT umgerechnet.`
+      )) return false;
+    }
+  }
+
+  try {
+    await updateDoc(doc(db, "zutaten", zutatId), { name, nameKey: key, unit: nextUnit });
+    return true;
+  } catch (err) {
+    console.error(err);
+    alert("Zutat konnte nicht gespeichert werden. Prüft eure Internetverbindung.");
+    return false;
+  }
+}
+
+function deleteZutat(zutat) {
+  const used = zutatUsageCount(zutat.id);
+  if (used > 0) {
+    const where = used === 1 ? "1 Rezept" : `${used} Rezepten`;
+    alert(`„${zutat.name}" wird in ${where} verwendet und kann nicht gelöscht werden.`);
+    return;
+  }
+  if (!confirm(`„${zutat.name}" wirklich löschen?`)) return;
+  if (editingZutatId === zutat.id) resetZutatForm();
+  deleteDoc(doc(db, "zutaten", zutat.id)).catch((e) => console.error(e));
+}
+
+function renderZutaten() {
+  zutatCountEl.textContent = zutaten.length;
+  zutatEmptyEl.style.display = zutaten.length ? "none" : "block";
+  zutatenListEl.innerHTML = "";
+
+  zutaten.forEach((z) => {
+    const li = document.createElement("li");
+    li.className = "zutat-item";
+
+    const name = document.createElement("span");
+    name.className = "zutat-item__name";
+    name.textContent = z.name;
+
+    const unitLabel = formatUnit(z.unit);
+    if (unitLabel) {
+      const unit = document.createElement("span");
+      unit.className = "zutat-item__unit";
+      unit.textContent = unitLabel;
+      li.appendChild(unit);
+    }
+
+    const used = zutatUsageCount(z.id);
+    const usage = document.createElement("span");
+    usage.className = "zutat-item__usage";
+    if (used === 0) {
+      usage.classList.add("zutat-item__usage--unused");
+      usage.textContent = "ungenutzt";
+    } else {
+      usage.textContent = used === 1 ? "1 Rezept" : `${used} Rezepte`;
+    }
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "icon-btn";
+    editBtn.setAttribute("aria-label", `${z.name} bearbeiten`);
+    editBtn.textContent = "✎";
+    editBtn.addEventListener("click", () => startEditZutat(z));
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "icon-btn icon-btn--danger";
+    delBtn.setAttribute("aria-label", `${z.name} löschen`);
+    delBtn.textContent = "🗑";
+    delBtn.addEventListener("click", () => deleteZutat(z));
+
+    li.prepend(name);
+    li.append(usage, editBtn, delBtn);
+    zutatenListEl.appendChild(li);
+  });
+}
+
+function resetZutatForm() {
+  zutatForm.reset();
+  zutatUnitSelect.value = "";
+  editingZutatId = null;
+  zutatSubmitBtn.textContent = "Hinzufügen";
+  zutatCancelBtn.hidden = true;
+}
+
+function startEditZutat(z) {
+  editingZutatId = z.id;
+  zutatNameInput.value = z.name || "";
+  zutatUnitSelect.value = normalizeUnit(z.unit);
+  zutatSubmitBtn.textContent = "Speichern";
+  zutatCancelBtn.hidden = false;
+  zutatNameInput.focus();
+}
+
+zutatCancelBtn.addEventListener("click", resetZutatForm);
+
+zutatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  zutatSubmitBtn.disabled = true;
+  try {
+    if (editingZutatId) {
+      const ok = await saveZutatEdit(editingZutatId, zutatNameInput.value, zutatUnitSelect.value);
+      if (ok) resetZutatForm();
+    } else {
+      const id = await createZutat(zutatNameInput.value, zutatUnitSelect.value);
+      if (id) resetZutatForm();
+    }
+  } finally {
+    zutatSubmitBtn.disabled = false;
+  }
+});
+
+// ---------------------------------------------------------------
 // Add recipe form
 // ---------------------------------------------------------------
+function unitInputFor(name) {
+  const raw = prompt(
+    `Welche Einheit hat „${name}"?\n\nLeer lassen für keine Einheit, sonst: g, kg, ml, l, Stück`,
+    ""
+  );
+  if (raw === null) return undefined;          // cancelled
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const unit = normalizeUnit(trimmed);
+  if (!unit) {
+    alert(`„${trimmed}" ist keine bekannte Einheit. Erlaubt: g, kg, ml, l, Stück — oder leer.`);
+    return undefined;
+  }
+  return unit;
+}
+
 function newIngredientRow(ing) {
   const row = document.createElement("div");
   row.className = "ingredient-row";
-  row.innerHTML = `
-    <input type="number" step="0.25" min="0" placeholder="Menge" class="ing-amount">
-    <select class="ing-unit" aria-label="Einheit">
-      ${UNIT_OPTIONS.map((option) => `<option value="${option.value}">${option.label}</option>`).join("")}
-    </select>
-    <input type="text" placeholder="Zutat" class="ing-name">
-    <button type="button" class="row-remove" aria-label="Zutat entfernen">×</button>
-  `;
-  if (ing) {
-    row.querySelector(".ing-amount").value = ing.amount ?? "";
-    row.querySelector(".ing-unit").value = normalizeUnit(ing.unit);
-    row.querySelector(".ing-name").value = ing.name ?? "";
-  }
-  row.querySelector(".row-remove").addEventListener("click", () => {
+
+  const amount = document.createElement("input");
+  amount.type = "number";
+  amount.step = "0.25";
+  amount.min = "0";
+  amount.placeholder = "Menge";
+  amount.className = "ing-amount";
+
+  const unitDisplay = document.createElement("span");
+  unitDisplay.className = "ing-unit-display";
+
+  const combo = createZutatCombobox({
+    value: ing?.zutatId ?? null,
+    getZutaten: () => zutaten,
+    onSelect: (zutatId) => {
+      const zutat = zutatId ? zutatenById.get(zutatId) : null;
+      unitDisplay.textContent = zutat ? formatUnit(zutat.unit) : "";
+    },
+    onCreateRequest: async (name) => {
+      const unit = unitInputFor(name);
+      if (unit === undefined) return null;
+      return await createZutat(name, unit);
+    }
+  });
+
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "row-remove";
+  remove.setAttribute("aria-label", "Zutat entfernen");
+  remove.textContent = "×";
+  remove.addEventListener("click", () => {
     if (ingredientsEditor.children.length > 1) row.remove();
   });
+
+  row.append(amount, unitDisplay, combo.element, remove);
+  row._combo = combo;
+
+  if (ing) {
+    const parsed = toAmount(ing.amount);
+    amount.value = parsed === null ? "" : parsed;
+  }
   return row;
 }
 
-ingredientsEditor.querySelector(".row-remove").addEventListener("click", () => {
-  if (ingredientsEditor.children.length > 1) ingredientsEditor.firstElementChild.remove();
-});
+// Keeps open rows in sync when a Zutat is renamed or deleted elsewhere.
+function refreshIngredientRows() {
+  Array.from(ingredientsEditor.children).forEach((row) => row._combo?.refresh());
+}
 
 addIngredientRowBtn.addEventListener("click", () => {
-  ingredientsEditor.appendChild(newIngredientRow());
-  ingredientsEditor.lastElementChild.querySelector(".ing-name").focus();
+  const row = newIngredientRow();
+  ingredientsEditor.appendChild(row);
+  row._combo.focus();
 });
 
 cancelRecipeBtn.addEventListener("click", () => {
@@ -377,16 +690,22 @@ recipeForm.addEventListener("submit", async (e) => {
   const name = recipeNameInput.value.trim();
   if (!name) return;
 
-  const ingredients = Array.from(ingredientsEditor.querySelectorAll(".ingredient-row"))
+  const rows = Array.from(ingredientsEditor.querySelectorAll(".ingredient-row"));
+  const unresolved = rows.some((row) => !row._combo.getValue() && row._combo.input.value.trim());
+  if (unresolved) {
+    alert("Mindestens eine Zutat ist nicht aus der Liste gewählt. Bitte auswählen oder neu anlegen.");
+    return;
+  }
+
+  const ingredients = rows
     .map((row) => ({
-      amount: row.querySelector(".ing-amount").value.trim(),
-      unit: normalizeUnit(row.querySelector(".ing-unit").value),
-      name: row.querySelector(".ing-name").value.trim()
+      zutatId: row._combo.getValue(),
+      amount: toAmount(row.querySelector(".ing-amount").value)
     }))
-    .filter((ing) => ing.name);
+    .filter((ing) => ing.zutatId);
 
   if (!ingredients.length) {
-    alert("Mindestens eine Zutat mit Namen eintragen.");
+    alert("Mindestens eine Zutat auswählen.");
     return;
   }
 
@@ -415,4 +734,5 @@ recipeForm.addEventListener("submit", async (e) => {
 
 // init
 resetRecipeForm();
+resetZutatForm();
 updateGenerateAvailability();
