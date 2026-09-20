@@ -41,8 +41,10 @@ body{
 }
 
 .site-head{
+  position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 16px;
   padding-bottom: 22px;
   margin-bottom: 26px;
@@ -67,14 +69,15 @@ body{
   max-width: 46ch;
 }
 .sync-indicator{
-  margin-left: auto;
+  position: absolute;
+  right: 0;
+  top: 6px;
   display: flex;
   align-items: center;
   gap: 7px;
   font-size: 12.5px;
   color: var(--ink-faint);
   white-space: nowrap;
-  padding-top: 6px;
 }
 .sync-indicator .dot{
   width: 7px; height: 7px; border-radius: 50%;
@@ -105,7 +108,7 @@ body{
     grid-template-areas: "recipes" "plan" "shopping" "zutaten";
   }
   .site-head{ flex-wrap: wrap; }
-  .sync-indicator{ margin-left: 0; }
+  .sync-indicator{ position: static; width: 100%; justify-content: center; }
 }
 
 .panel{
