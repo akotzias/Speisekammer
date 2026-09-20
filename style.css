@@ -362,8 +362,6 @@ input::placeholder{ color: var(--ink-faint); }
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 15px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
   color: var(--ink-dim);
   margin: 20px 0 6px;
   padding-bottom: 6px;
