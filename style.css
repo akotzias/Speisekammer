@@ -633,4 +633,132 @@ input::placeholder{ color: var(--ink-faint); }
 
 [data-style="markt"] .shopping-list li{ border-bottom: 1px dashed var(--rule); }
 [data-style="markt"] .shopping-item__check{ accent-color: var(--sage); }
+
+/* ── Stil: Nukem ───────────────────────────────────────────────────
+   Gunmetal, Warnstreifen und geschrägte Versalien. Der Streifen läuft
+   nur an zwei Stellen (Kopfzeile, Markt-Überschrift), sonst frisst er
+   die Listen auf. */
+:root[data-style="nukem"]{
+  --bg:            #14110D;
+  --bg-panel:      #221E18;
+  --bg-panel-2:    #2B251D;
+  --ink:           #EFE5D2;
+  --ink-dim:       #A89A82;
+  --ink-faint:     #7B6E5B;
+  --rule:          #3E3629;
+  --mustard:       #F2B01E;
+  --mustard-ink:   #14110D;
+  --clay:          #C1272D;
+  --sage:          #7E8B3A;
+  --focus:         #F2B01E;
+
+  --steel:         #4A4133;
+  --hazard: repeating-linear-gradient(45deg, #F2B01E 0 10px, #14110D 10px 20px);
+
+  --font-display: "Anton", Impact, "Haettenschweiler", sans-serif;
+  --font-body: "Oswald", "Arial Narrow", sans-serif;
+
+  --radius-s: 2px;
+  --radius-m: 3px;
+  --shadow-card: 0 10px 24px rgba(0,0,0,.55);
+}
+
+[data-style="nukem"] body{
+  background:
+    radial-gradient(circle at 50% -10%, rgba(242,176,30,.10), transparent 30rem),
+    var(--bg);
+}
+
+[data-style="nukem"] .site-head{
+  border-bottom: none;
+  padding-bottom: 26px;
+}
+[data-style="nukem"] .site-head::after{
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 7px;
+  background: var(--hazard);
+}
+[data-style="nukem"] .site-head h1{
+  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: .02em;
+  color: var(--mustard);
+  transform: skewX(-8deg);
+  text-shadow: 3px 3px 0 var(--clay), 6px 6px 0 rgba(0,0,0,.55);
+}
+
+[data-style="nukem"] .panel{
+  border: 2px solid var(--steel);
+  background: linear-gradient(180deg, #262119, #1C1813);
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-style="nukem"] .panel--accent{
+  background: linear-gradient(180deg, #2E2619, #1C1813);
+  border-color: var(--mustard);
+}
+[data-style="nukem"] .panel__head h2{
+  text-transform: uppercase;
+  font-weight: 400;
+  font-size: 23px;
+  letter-spacing: .03em;
+  transform: skewX(-8deg);
+  text-shadow: 2px 2px 0 var(--clay);
+}
+
+[data-style="nukem"] .recipe-item{ background: rgba(255,255,255,.04); border-left-width: 5px; }
+[data-style="nukem"] .recipe-item__name{ font-family: var(--font-body); font-weight: 500; }
+[data-style="nukem"] .zutat-item{ background: rgba(255,255,255,.04); border-left-width: 5px; }
+[data-style="nukem"] .zutat-item__unit{ background: rgba(242,176,30,.18); color: var(--mustard); }
+[data-style="nukem"] .zutat-item__markt{ background: rgba(126,139,58,.24); color: #C3D17A; }
+
+[data-style="nukem"] .menu-row__recipe{
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+[data-style="nukem"] .btn{
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+[data-style="nukem"] .btn--primary{
+  border: 2px solid #14110D;
+  box-shadow: 0 4px 0 #8A5F08;
+}
+[data-style="nukem"] .btn--primary:active{ box-shadow: 0 2px 0 #8A5F08; }
+[data-style="nukem"] .btn--ghost{ border-color: var(--steel); }
+[data-style="nukem"] .add-recipe summary{ text-transform: uppercase; letter-spacing: .04em; }
+
+[data-style="nukem"] input[type="text"],
+[data-style="nukem"] input[type="number"],
+[data-style="nukem"] select{
+  background: #14110D;
+  border: 2px solid var(--steel);
+  color: var(--ink);
+}
+[data-style="nukem"] .zutat-combobox__list{ border: 2px solid var(--steel); }
+
+[data-style="nukem"] .shopping-item__check{ accent-color: var(--clay); }
+[data-style="nukem"] .shopping-section{
+  position: relative;
+  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: .04em;
+  color: var(--mustard);
+  border-bottom: none;
+  padding-bottom: 10px;
+}
+[data-style="nukem"] .shopping-section::after{
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 5px;
+  background: var(--hazard);
+}
 [data-style="markt"] .shopping-section{ border-bottom: 3px solid var(--ink); color: var(--ink); }

@@ -24,7 +24,8 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const STYLE_KEY = "speisekammer:style";
-const STYLES = ["kochbuch", "markt"];
+// STYLES[0] ist der Standard — auch im Inline-Skript in index.html hinterlegt.
+const STYLES = ["markt", "kochbuch", "nukem"];
 
 const styleSelect = document.getElementById("styleSelect");
 
