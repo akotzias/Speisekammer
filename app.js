@@ -261,6 +261,12 @@ function renderPlan() {
 }
 
 function renderShoppingList() {
+  // Der Snapshot baut die Liste neu auf — sonst springt der Fokus beim Abhaken weg.
+  const active = document.activeElement;
+  const focusedZutatId = active && active.classList.contains("shopping-item__check")
+    ? active.dataset.zutatId
+    : null;
+
   shoppingListEl.innerHTML = "";
   marktListEl.innerHTML = "";
   marktHeadingEl.hidden = true;
@@ -277,20 +283,59 @@ function renderShoppingList() {
   }
   shoppingEmptyEl.style.display = "none";
 
+  const checked = (currentPlan && currentPlan.checked) || {};
+
   aggregated.forEach((item) => {
+    const isChecked = !!checked[item.zutatId];
+
     const li = document.createElement("li");
+    li.className = "shopping-item";
+    li.classList.toggle("is-checked", isChecked);
+
+    const label = document.createElement("label");
+    label.className = "shopping-item__label";
+
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.className = "shopping-item__check";
+    box.checked = isChecked;
+    box.dataset.zutatId = item.zutatId;
+    box.addEventListener("change", () => {
+      li.classList.toggle("is-checked", box.checked);
+      setShoppingItemChecked(item.zutatId, box.checked);
+    });
+
     const amt = document.createElement("span");
     amt.className = "amt";
     amt.textContent = item.display;
     const name = document.createElement("span");
+    name.className = "shopping-item__name";
     name.textContent = item.name;
-    li.append(amt, name);
+
+    label.append(box, amt, name);
+    li.appendChild(label);
     (item.markt ? marktListEl : shoppingListEl).appendChild(li);
   });
 
   const hasMarkt = marktListEl.children.length > 0;
   marktHeadingEl.hidden = !hasMarkt;
   marktListEl.hidden = !hasMarkt;
+
+  if (focusedZutatId) {
+    const restored = document.querySelector(
+      `.shopping-item__check[data-zutat-id="${focusedZutatId}"]`
+    );
+    if (restored) restored.focus();
+  }
+}
+
+async function setShoppingItemChecked(zutatId, checked) {
+  try {
+    await updateDoc(doc(db, "plan", "current"), { [`checked.${zutatId}`]: checked });
+  } catch (e) {
+    console.error(e);
+    alert("Der Haken konnte nicht gespeichert werden. Prüft eure Internetverbindung.");
+  }
 }
 
 function aggregateIngredients(recipeIds) {
@@ -304,6 +349,7 @@ function aggregateIngredients(recipeIds) {
 
       if (!map.has(ing.zutatId)) {
         map.set(ing.zutatId, {
+          zutatId: ing.zutatId,
           name: zutat.name, unit: zutat.unit, markt: !!zutat.markt,
           amount: 0, hasAmount: false, plainCount: 0
         });
@@ -329,7 +375,7 @@ function aggregateIngredients(recipeIds) {
         segments.push(`${entry.plainCount}×`);
       }
       const display = segments.length ? segments.join(" + ") : "—";
-      return { name: entry.name, display, markt: entry.markt };
+      return { zutatId: entry.zutatId, name: entry.name, display, markt: entry.markt };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
@@ -351,7 +397,7 @@ generateBtn.addEventListener("click", async () => {
   const recipeIds = shuffled.slice(0, MENU_SIZE).map((r) => r.id);
 
   try {
-    await setDoc(doc(db, "plan", "current"), { recipeIds });
+    await setDoc(doc(db, "plan", "current"), { recipeIds, checked: {} });
   } catch (e) {
     console.error(e);
     alert("Das Menü konnte nicht gespeichert werden. Prüft eure Internetverbindung.");

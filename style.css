@@ -365,18 +365,38 @@ input::placeholder{ color: var(--ink-faint); }
 @media (max-width: 480px){ .shopping-list{ columns: 1; } }
 .shopping-list li{
   break-inside: avoid;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
   padding: 6px 0;
   border-bottom: 1px solid var(--rule);
   font-size: 15px;
+}
+.shopping-item__label{
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+}
+.shopping-item__check{
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--mustard);
+  transform: translateY(2px);
+}
+.shopping-item__check:focus-visible{
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 .shopping-list .amt{
   color: var(--mustard);
   font-variant-numeric: tabular-nums;
   min-width: 3.2em;
   flex-shrink: 0;
+}
+.shopping-item.is-checked .amt,
+.shopping-item.is-checked .shopping-item__name{
+  text-decoration: line-through;
+  color: var(--ink-faint);
 }
 
 .shopping-section{
@@ -611,6 +631,6 @@ input::placeholder{ color: var(--ink-faint); }
   box-shadow: 4px 4px 0 var(--ink);
 }
 
-[data-style="markt"] .shopping-list li::before{ content: "☐"; color: var(--ink); }
 [data-style="markt"] .shopping-list li{ border-bottom: 1px dashed var(--rule); }
+[data-style="markt"] .shopping-item__check{ accent-color: var(--sage); }
 [data-style="markt"] .shopping-section{ border-bottom: 3px solid var(--ink); color: var(--ink); }
