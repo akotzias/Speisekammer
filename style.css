@@ -42,6 +42,7 @@ body{
 
 .site-head{
   position: relative;
+  overflow: hidden;   /* der überstehende Geheimzusatz darf die Seite nicht breiter machen */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,6 +63,20 @@ body{
   margin: 0 0 4px;
   letter-spacing: -0.01em;
 }
+/* Nur sichtbar, wenn man die Überschrift mit der Maus markiert.
+   Breite 0, damit der Titel zentriert bleibt wie ohne den Zusatz. */
+.site-head__secret{
+  display: inline-block;
+  width: 0;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: transparent;
+}
+.site-head__secret::selection{ color: var(--ink-dim); }
+
 .tagline{
   margin: 0;
   color: var(--ink-dim);
