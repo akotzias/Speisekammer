@@ -361,7 +361,7 @@ input::placeholder{ color: var(--ink-faint); }
 .shopping-section{
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 18px;
   color: var(--ink-dim);
   margin: 20px 0 6px;
   padding-bottom: 6px;
