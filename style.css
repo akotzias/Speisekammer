@@ -87,10 +87,17 @@ body{
 .sync-indicator[data-state="online"] .dot{ background: var(--sage); }
 .sync-indicator[data-state="offline"] .dot{ background: var(--clay); }
 
-.style-picker{
+.head-tools{
   position: absolute;
   left: 0;
   top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.head-tools .btn{ align-self: center; }
+.style-picker{
+  position: static;
 }
 .style-picker select{
   width: auto;
@@ -129,7 +136,7 @@ body{
   }
   .site-head{ flex-wrap: wrap; }
   .sync-indicator{ position: static; width: 100%; justify-content: center; }
-  .style-picker{ position: static; width: 100%; text-align: center; }
+  .head-tools{ position: static; width: 100%; justify-content: center; }
 }
 
 .panel{

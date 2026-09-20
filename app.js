@@ -75,6 +75,8 @@ let currentPlan = null;
 let recipesById = new Map();
 let zutatenById = new Map();
 let recipesLoaded = false;
+let zutatenLoaded = false;
+let planLoaded = false;
 let editingId = null;
 let editingZutatId = null;
 
@@ -88,6 +90,7 @@ const shoppingEmptyEl = document.getElementById("shoppingEmpty");
 const marktHeadingEl = document.getElementById("marktHeading");
 const marktListEl = document.getElementById("marktList");
 const generateBtn = document.getElementById("generateBtn");
+const backupBtn = document.getElementById("backupBtn");
 
 const addRecipeDetails = document.getElementById("addRecipeDetails");
 const recipeForm = document.getElementById("recipeForm");
@@ -121,6 +124,7 @@ function startSubscriptions() {
     renderPlan();
     renderShoppingList();
     updateGenerateAvailability();
+    updateBackupAvailability();
   }, (err) => console.error("recipes onSnapshot", err));
 
   onSnapshot(collection(db, "zutaten"), (snap) => {
@@ -128,16 +132,20 @@ function startSubscriptions() {
       .map((d) => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"));
     zutatenById = new Map(zutaten.map((z) => [z.id, z]));
+    zutatenLoaded = true;
     renderZutaten();
     renderRecipes();
     renderShoppingList();
     refreshIngredientRows();
+    updateBackupAvailability();
   }, (err) => console.error("zutaten onSnapshot", err));
 
   onSnapshot(doc(db, "plan", "current"), (snap) => {
     currentPlan = snap.exists() ? snap.data() : null;
+    planLoaded = true;
     renderPlan();
     renderShoppingList();
+    updateBackupAvailability();
   }, (err) => console.error("plan onSnapshot", err));
 }
 
@@ -384,6 +392,47 @@ function aggregateIngredients(recipeIds) {
 function updateGenerateAvailability() {
   generateBtn.disabled = recipes.length === 0;
 }
+
+function updateBackupAvailability() {
+  backupBtn.disabled = !(recipesLoaded && zutatenLoaded && planLoaded);
+}
+
+// Firestore-Timestamps werden zu lesbaren ISO-Strings, alles andere bleibt wie es ist.
+function toPlain(value) {
+  if (value == null) return value;
+  if (typeof value.toDate === "function") return value.toDate().toISOString();
+  if (Array.isArray(value)) return value.map(toPlain);
+  if (typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, toPlain(v)]));
+  }
+  return value;
+}
+
+function backupStamp(date) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`
+    + `-${p(date.getHours())}${p(date.getMinutes())}`;
+}
+
+backupBtn.addEventListener("click", () => {
+  const now = new Date();
+  const payload = toPlain({
+    version: 1,
+    exportedAt: now.toISOString(),
+    projectId: firebaseConfig.projectId,
+    recipes,
+    zutaten,
+    plan: currentPlan ? { id: "current", ...currentPlan } : null
+  });
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `speisekammer-${backupStamp(now)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+});
 
 generateBtn.addEventListener("click", async () => {
   if (!recipes.length) return;

@@ -32,14 +32,18 @@
     <div class="sync-indicator" id="syncIndicator" title="Verbindungsstatus">
       <span class="dot"></span><span class="sync-label">verbinde…</span>
     </div>
-    <label class="style-picker">
-      <span class="visually-hidden">Stil</span>
-      <select id="styleSelect">
-        <option value="markt">Marktstand</option>
-        <option value="kochbuch">Kochbuch</option>
-        <option value="nukem">Nukem</option>
-      </select>
-    </label>
+    <div class="head-tools">
+      <label class="style-picker">
+        <span class="visually-hidden">Stil</span>
+        <select id="styleSelect">
+          <option value="markt">Marktstand</option>
+          <option value="kochbuch">Kochbuch</option>
+          <option value="nukem">Nukem</option>
+        </select>
+      </label>
+      <button type="button" id="backupBtn" class="btn btn--ghost btn--small"
+              title="Alle Daten als JSON-Datei herunterladen" disabled>Sicherung</button>
+    </div>
   </header>
 
   <main class="layout">
