@@ -87,6 +87,26 @@ body{
 .sync-indicator[data-state="online"] .dot{ background: var(--sage); }
 .sync-indicator[data-state="offline"] .dot{ background: var(--clay); }
 
+.style-picker{
+  position: absolute;
+  left: 0;
+  top: 2px;
+}
+.style-picker select{
+  width: auto;
+  padding: 5px 9px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.visually-hidden{
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .layout{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -109,6 +129,7 @@ body{
   }
   .site-head{ flex-wrap: wrap; }
   .sync-indicator{ position: static; width: 100%; justify-content: center; }
+  .style-picker{ position: static; width: 100%; text-align: center; }
 }
 
 .panel{
@@ -516,3 +537,80 @@ input::placeholder{ color: var(--ink-faint); }
   color: var(--ink-faint);
   font-style: italic;
 }
+
+/* ── Stil: Marktstand ──────────────────────────────────────────────
+   Harte Offset-Schatten statt Weichzeichner, 2px-Konturen,
+   je Panel ein eigener Farbton. Umgeschaltet über [data-style]. */
+:root[data-style="markt"]{
+  --bg:            #FFF6E2;
+  --bg-panel:      #FFFDF6;
+  --bg-panel-2:    #FFFDF6;
+  --ink:           #2A1F14;
+  --ink-dim:       #5A4732;
+  --ink-faint:     #8A745A;
+  --rule:          rgba(42,31,20,.35);
+  --mustard:       #E8A417;
+  --mustard-ink:   #2A1F14;
+  --clay:          #C9432A;
+  --sage:          #5E7A3A;
+  --focus:         #2A1F14;
+
+  --font-display: "Nunito", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --shadow-card: 5px 5px 0 var(--ink);
+}
+
+[data-style="markt"] body{ background: var(--bg); }
+
+[data-style="markt"] .site-head{ border-bottom: 2px dashed var(--ink); }
+[data-style="markt"] .site-head h1{ font-weight: 800; }
+
+[data-style="markt"] .layout{ gap: 26px; }
+
+[data-style="markt"] .panel{ border: 2px solid var(--ink); }
+[data-style="markt"] .panel:nth-of-type(1){ background: #FFE9B8; }
+[data-style="markt"] .panel:nth-of-type(2){ background: #FFD9CE; border-color: var(--ink); }
+[data-style="markt"] .panel:nth-of-type(3){ background: #DDEBC6; }
+[data-style="markt"] .panel__head h2{
+  background: var(--ink);
+  color: #FFF6E2;
+  border-radius: 7px;
+  padding: 3px 11px 4px;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+[data-style="markt"] .recipe-item,
+[data-style="markt"] .zutat-item{
+  border: 2px solid var(--ink);
+  border-left-width: 7px;
+  background: rgba(255,255,255,.6);
+}
+[data-style="markt"] .recipe-item{ border-left-color: var(--mustard); }
+[data-style="markt"] .zutat-item{ border-left-color: var(--sage); }
+[data-style="markt"] .zutat-item__unit{ background: rgba(232,164,23,.45); color: var(--ink); }
+[data-style="markt"] .zutat-item__markt{ background: rgba(94,122,58,.30); color: #2F3D1D; }
+
+[data-style="markt"] .btn{ border: 2px solid var(--ink); font-weight: 800; }
+[data-style="markt"] .btn--primary{ box-shadow: 3px 3px 0 var(--ink); }
+[data-style="markt"] .btn--primary:active{ box-shadow: 1px 1px 0 var(--ink); }
+[data-style="markt"] .btn--ghost{ color: var(--ink); }
+[data-style="markt"] .add-recipe summary{ color: #8A5A05; }
+
+[data-style="markt"] input[type="text"],
+[data-style="markt"] input[type="number"],
+[data-style="markt"] select{
+  border: 2px solid var(--ink);
+  background: #FFFDF6;
+}
+[data-style="markt"] .zutat-combobox__list{
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+[data-style="markt"] .shopping-list li::before{ content: "☐"; color: var(--ink); }
+[data-style="markt"] .shopping-list li{ border-bottom: 1px dashed var(--rule); }
+[data-style="markt"] .shopping-section{ border-bottom: 3px solid var(--ink); color: var(--ink); }

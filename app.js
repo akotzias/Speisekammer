@@ -23,6 +23,31 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const STYLE_KEY = "speisekammer:style";
+const STYLES = ["kochbuch", "markt"];
+
+const styleSelect = document.getElementById("styleSelect");
+
+function applyStyle(name) {
+  const style = STYLES.includes(name) ? name : STYLES[0];
+  document.documentElement.dataset.style = style;
+  styleSelect.value = style;
+  try {
+    localStorage.setItem(STYLE_KEY, style);
+  } catch (err) {
+    /* Stil bleibt für diese Sitzung gesetzt, wird nur nicht gespeichert. */
+  }
+}
+
+let savedStyle = null;
+try {
+  savedStyle = localStorage.getItem(STYLE_KEY);
+} catch (err) {
+  /* kein Zugriff auf localStorage — Standardstil */
+}
+applyStyle(savedStyle);
+styleSelect.addEventListener("change", () => applyStyle(styleSelect.value));
+
 const syncIndicator = document.getElementById("syncIndicator");
 const syncLabel = syncIndicator.querySelector(".sync-label");
 

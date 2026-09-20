@@ -7,8 +7,15 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍲</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>
+  // Set the saved style before first paint so the page never flashes the other one.
+  try {
+    const saved = localStorage.getItem("speisekammer:style");
+    if (saved) document.documentElement.dataset.style = saved;
+  } catch (e) {}
+</script>
 </head>
 <body>
 
@@ -22,6 +29,13 @@
     <div class="sync-indicator" id="syncIndicator" title="Verbindungsstatus">
       <span class="dot"></span><span class="sync-label">verbinde…</span>
     </div>
+    <label class="style-picker">
+      <span class="visually-hidden">Stil</span>
+      <select id="styleSelect">
+        <option value="kochbuch">Kochbuch</option>
+        <option value="markt">Marktstand</option>
+      </select>
+    </label>
   </header>
 
   <main class="layout">
