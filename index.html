@@ -26,7 +26,6 @@
 
   <main class="layout">
 
-    <!-- RECIPES -->
     <section class="panel" aria-labelledby="recipes-heading">
       <div class="panel__head">
         <h2 id="recipes-heading">Rezepte</h2>
@@ -34,7 +33,6 @@
       </div>
 
       <ul class="recipe-list" id="recipeList">
-        <!-- filled by JS -->
       </ul>
 
       <p class="empty-note" id="recipeEmpty">Noch keine Rezepte. Leg unten das erste an.</p>
@@ -47,7 +45,6 @@
             <input type="text" id="recipeName" placeholder="z. B. Omelette" required>
           </label>
 
-          <!-- rows are built by app.js (newIngredientRow) -->
           <div class="ingredients-editor" id="ingredientsEditor"></div>
 
           <button type="button" id="addIngredientRow" class="btn btn--ghost btn--small">+ Zutat</button>
@@ -60,7 +57,6 @@
       </details>
     </section>
 
-    <!-- WEEK PLAN -->
     <section class="panel panel--accent" aria-labelledby="plan-heading">
       <div class="panel__head">
         <h2 id="plan-heading">Wochenplan</h2>
@@ -72,19 +68,17 @@
 
       <p class="empty-note" id="planEmpty">Noch kein Plan gewürfelt.</p>
 
-      <ol class="day-list" id="dayList"><!-- filled by JS --></ol>
+      <ol class="day-list" id="dayList"></ol>
     </section>
 
-    <!-- SHOPPING LIST -->
     <section class="panel" aria-labelledby="shopping-heading">
       <div class="panel__head">
         <h2 id="shopping-heading">Einkaufsliste</h2>
       </div>
       <p class="empty-note" id="shoppingEmpty">Erscheint, sobald ein Plan gewürfelt wurde.</p>
-      <ul class="shopping-list" id="shoppingList"><!-- filled by JS --></ul>
+      <ul class="shopping-list" id="shoppingList"></ul>
     </section>
 
-    <!-- ZUTATEN CATALOG -->
     <section class="panel" aria-labelledby="zutaten-heading">
       <div class="panel__head">
         <h2 id="zutaten-heading">Zutaten</h2>
@@ -94,7 +88,6 @@
       <form id="zutatForm" class="zutat-form">
         <input type="text" id="zutatName" placeholder="Neue Zutat, z. B. Ei" required>
         <select id="zutatUnit" aria-label="Einheit">
-          <!-- filled by JS from UNIT_OPTIONS -->
         </select>
         <button type="submit" class="btn btn--primary btn--small" id="zutatSubmit">Hinzufügen</button>
         <button type="button" class="btn btn--ghost btn--small" id="zutatCancel" hidden>Abbrechen</button>
@@ -102,7 +95,7 @@
 
       <p class="empty-note" id="zutatEmpty">Noch keine Zutaten. Leg oben die erste an.</p>
 
-      <ul class="zutat-list" id="zutatenList"><!-- filled by JS --></ul>
+      <ul class="zutat-list" id="zutatenList"></ul>
     </section>
 
   </main>

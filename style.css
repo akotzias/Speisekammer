@@ -1,7 +1,3 @@
-/* ---------------------------------------------------------
-   Speisekammer — design tokens
-   A warm shared recipe notebook.
---------------------------------------------------------- */
 :root{
   --bg:            #F7EAD2;
   --bg-panel:      #FFF8EA;
@@ -44,7 +40,6 @@ body{
   padding: 28px 20px 64px;
 }
 
-/* ---------------- Header ---------------- */
 .site-head{
   display: flex;
   align-items: flex-start;
@@ -89,7 +84,6 @@ body{
 .sync-indicator[data-state="online"] .dot{ background: var(--sage); }
 .sync-indicator[data-state="offline"] .dot{ background: var(--clay); }
 
-/* ---------------- Layout ---------------- */
 .layout{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -150,7 +144,6 @@ body{
   margin: 6px 0 14px;
 }
 
-/* ---------------- Recipe list ---------------- */
 .recipe-list{
   list-style: none;
   margin: 0 0 6px;
@@ -207,7 +200,6 @@ body{
 .icon-btn:disabled{ opacity: .35; cursor: default; }
 .icon-btn:disabled:hover{ color: var(--ink-faint); background: none; }
 
-/* ---------------- Form ---------------- */
 .add-recipe{ margin-top: 10px; }
 .add-recipe summary{
   cursor: pointer;
@@ -287,7 +279,6 @@ input::placeholder{ color: var(--ink-faint); }
   margin-top: 4px;
 }
 
-/* ---------------- Buttons ---------------- */
 .btn{
   font-family: var(--font-body);
   font-size: 14.5px;
@@ -314,7 +305,6 @@ input::placeholder{ color: var(--ink-faint); }
 .btn--wide{ width: 100%; }
 .btn:disabled{ opacity: .5; cursor: not-allowed; }
 
-/* ---------------- Plan controls ---------------- */
 .plan-controls{
   display: flex;
   flex-direction: column;
@@ -322,7 +312,6 @@ input::placeholder{ color: var(--ink-faint); }
   margin-bottom: 16px;
 }
 
-/* ---------------- Day list ---------------- */
 .day-list{
   list-style: none;
   margin: 0;
@@ -352,7 +341,6 @@ input::placeholder{ color: var(--ink-faint); }
   font-weight: 500;
 }
 
-/* ---------------- Shopping list ---------------- */
 .shopping-list{
   list-style: none;
   margin: 0;
@@ -377,7 +365,6 @@ input::placeholder{ color: var(--ink-faint); }
   flex-shrink: 0;
 }
 
-/* ---------------- Footer ---------------- */
 .site-foot{
   margin-top: 40px;
   text-align: center;
@@ -385,12 +372,10 @@ input::placeholder{ color: var(--ink-faint); }
   font-size: 12.5px;
 }
 
-/* ---------------- Motion & a11y ---------------- */
 @media (prefers-reduced-motion: reduce){
   *{ transition: none !important; }
 }
 
-/* ---------------- Zutat combobox ---------------- */
 .zutat-combobox{
   position: relative;
 }
@@ -445,7 +430,6 @@ input::placeholder{ color: var(--ink-faint); }
   background: rgba(201,76,50,.10);
 }
 
-/* ---------------- Zutaten panel ---------------- */
 .zutat-form{
   display: grid;
   grid-template-columns: 1fr 110px auto auto;
@@ -499,7 +483,6 @@ input::placeholder{ color: var(--ink-faint); }
   .zutat-form{ grid-template-columns: 1fr; }
 }
 
-/* ---------------- Plan: missing recipe ---------------- */
 .day-row__recipe--missing{
   color: var(--ink-faint);
   font-style: italic;

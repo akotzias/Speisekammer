@@ -11,17 +11,14 @@ import { createZutatCombobox, zutatKey } from "./zutat-combobox.js";
 
 const DAY_LABELS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 const UNIT_OPTIONS = [
-  { value: "", label: "keine Einheit" },
   { value: "g", label: "g" },
-  { value: "kg", label: "kg" },
   { value: "ml", label: "ml" },
-  { value: "l", label: "l" },
-  { value: "stk", label: "Stück" }
+  { value: "stk", label: "Stück" },
+  { value: "tl", label: "TL" },
+  { value: "el", label: "EL" },
+  { value: "prise", label: "Prise" }
 ];
 
-// ---------------------------------------------------------------
-// Firebase setup
-// ---------------------------------------------------------------
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -46,25 +43,15 @@ signInAnonymously(auth).catch((err) => {
   setSyncState("offline", "Verbindung fehlgeschlagen");
 });
 
-// ---------------------------------------------------------------
-// State
-//
-// Recipes reference Zutaten by id, and the plan references recipes by
-// id. Nothing is denormalized, so a rename or a deletion propagates on
-// the next snapshot without any reconciliation code.
-// ---------------------------------------------------------------
-let recipes = [];            // [{id, name, ingredients:[{zutatId, amount}]}]
-let zutaten = [];            // [{id, name, nameKey, unit}] sorted by name (de)
-let currentPlan = null;      // {days:[{label, recipeId}]}
+let recipes = [];
+let zutaten = [];
+let currentPlan = null;
 let recipesById = new Map();
 let zutatenById = new Map();
-let recipesLoaded = false;   // guards every usage-count decision
-let editingId = null;        // recipe being edited, or null when adding
-let editingZutatId = null;   // Zutat being edited, or null when adding
+let recipesLoaded = false;
+let editingId = null;
+let editingZutatId = null;
 
-// ---------------------------------------------------------------
-// DOM refs
-// ---------------------------------------------------------------
 const recipeListEl = document.getElementById("recipeList");
 const recipeEmptyEl = document.getElementById("recipeEmpty");
 const recipeCountEl = document.getElementById("recipeCount");
@@ -90,10 +77,6 @@ const zutatUnitSelect = document.getElementById("zutatUnit");
 const zutatSubmitBtn = document.getElementById("zutatSubmit");
 const zutatCancelBtn = document.getElementById("zutatCancel");
 
-// ---------------------------------------------------------------
-// Firestore subscriptions (started once auth is ready, so the first
-// reads carry a valid auth token and don't trip the security rules)
-// ---------------------------------------------------------------
 let subscribed = false;
 function startSubscriptions() {
   if (subscribed) return;
@@ -105,21 +88,19 @@ function startSubscriptions() {
     recipesById = new Map(recipes.map((r) => [r.id, r]));
     recipesLoaded = true;
     renderRecipes();
-    renderZutaten();       // usage counts come from recipes
+    renderZutaten();
     renderPlan();
     renderShoppingList();
     updateGenerateAvailability();
   }, (err) => console.error("recipes onSnapshot", err));
 
-  // Sorted client-side: Firestore's orderBy compares UTF-8 bytes, which
-  // would put "Äpfel" after "Zucker".
   onSnapshot(collection(db, "zutaten"), (snap) => {
     zutaten = snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
       .sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"));
     zutatenById = new Map(zutaten.map((z) => [z.id, z]));
     renderZutaten();
-    renderRecipes();       // ingredient labels
+    renderRecipes();
     renderShoppingList();
     refreshIngredientRows();
   }, (err) => console.error("zutaten onSnapshot", err));
@@ -131,9 +112,6 @@ function startSubscriptions() {
   }, (err) => console.error("plan onSnapshot", err));
 }
 
-// ---------------------------------------------------------------
-// Units
-// ---------------------------------------------------------------
 function normalizeUnit(unit) {
   const raw = (unit || "").trim();
   const lower = raw.toLowerCase();
@@ -142,8 +120,6 @@ function normalizeUnit(unit) {
   return UNIT_OPTIONS.some((option) => option.value === lower) ? lower : "";
 }
 
-// The empty unit renders as nothing. "keine Einheit" is a <select>
-// label and must never leak into a recipe or the shopping list.
 function formatUnit(unit) {
   const normalized = normalizeUnit(unit);
   if (!normalized) return "";
@@ -156,9 +132,6 @@ function toAmount(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-// ---------------------------------------------------------------
-// Rendering: recipes
-// ---------------------------------------------------------------
 function renderRecipes() {
   recipeCountEl.textContent = recipes.length;
   recipeEmptyEl.style.display = recipes.length ? "none" : "block";
@@ -232,9 +205,6 @@ function formatAmount(n) {
   return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-// ---------------------------------------------------------------
-// Rendering: plan
-// ---------------------------------------------------------------
 function renderPlan() {
   dayListEl.innerHTML = "";
   if (!currentPlan || !currentPlan.days || !currentPlan.days.length) {
@@ -265,9 +235,6 @@ function renderPlan() {
   });
 }
 
-// ---------------------------------------------------------------
-// Rendering: shopping list
-// ---------------------------------------------------------------
 function renderShoppingList() {
   shoppingListEl.innerHTML = "";
   if (!currentPlan || !currentPlan.days || !currentPlan.days.length) {
@@ -294,8 +261,6 @@ function renderShoppingList() {
   });
 }
 
-// Aggregates by Zutat id. Because a Zutat owns exactly one unit and one
-// spelling, "Ei" can no longer split across rows.
 function aggregateIngredients(days) {
   const map = new Map();
   days.forEach((d) => {
@@ -336,9 +301,6 @@ function aggregateIngredients(days) {
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
-// ---------------------------------------------------------------
-// Generate week plan
-// ---------------------------------------------------------------
 function updateGenerateAvailability() {
   generateBtn.disabled = recipes.length === 0;
 }
@@ -348,8 +310,6 @@ generateBtn.addEventListener("click", async () => {
   generateBtn.disabled = true;
   generateBtn.textContent = "Würfle…";
 
-  // Only the id is stored: names and ingredients are resolved at render
-  // time, so edits and deletions show up immediately.
   const days = DAY_LABELS.map((label) => {
     const choice = recipes[Math.floor(Math.random() * recipes.length)];
     return { label, recipeId: choice.id };
@@ -366,9 +326,6 @@ generateBtn.addEventListener("click", async () => {
   }
 });
 
-// ---------------------------------------------------------------
-// Zutaten catalog
-// ---------------------------------------------------------------
 UNIT_OPTIONS.forEach((option) => {
   const el = document.createElement("option");
   el.value = option.value;
@@ -398,8 +355,6 @@ function levenshtein(a, b) {
   return prev[b.length];
 }
 
-// Soft duplicate check: catches Ei/Eier and Nudel/Nudeln at the moment
-// of creation. Advisory only — the user can override.
 function findSimilarZutaten(key) {
   return zutaten.filter((z) => {
     const other = zutatKey(z.name);
@@ -444,8 +399,6 @@ async function createZutat(rawName, unit) {
   }
 }
 
-// Repoints every reference to sourceId at targetId, collapsing the two
-// rows into one when a recipe listed both Zutaten. Order is preserved.
 function repointIngredients(ingredients, sourceId, targetId) {
   const out = [];
   const seen = new Map();
@@ -466,9 +419,6 @@ function repointIngredients(ingredients, sourceId, targetId) {
   return out;
 }
 
-// Renaming a Zutat onto an existing name is a merge request: every
-// recipe referencing the source is repointed at the target, then the
-// source is deleted. One batch, so it cannot half-apply.
 async function mergeZutaten(source, target) {
   if (!recipesLoaded) {
     alert("Rezepte sind noch nicht geladen. Bitte kurz warten.");
@@ -625,7 +575,6 @@ function renderZutaten() {
 
 function resetZutatForm() {
   zutatForm.reset();
-  zutatUnitSelect.value = "";
   editingZutatId = null;
   zutatSubmitBtn.textContent = "Hinzufügen";
   zutatCancelBtn.hidden = true;
@@ -658,20 +607,17 @@ zutatForm.addEventListener("submit", async (e) => {
   }
 });
 
-// ---------------------------------------------------------------
-// Add recipe form
-// ---------------------------------------------------------------
 function unitInputFor(name) {
   const raw = prompt(
-    `Welche Einheit hat „${name}"?\n\nLeer lassen für keine Einheit, sonst: g, kg, ml, l, Stück`,
+    `Welche Einheit hat „${name}"?\n\nLeer lassen für keine Einheit, sonst: g, ml, Stück, TL, EL, Prise`,
     ""
   );
-  if (raw === null) return undefined;          // cancelled
+  if (raw === null) return undefined;
   const trimmed = raw.trim();
   if (!trimmed) return "";
   const unit = normalizeUnit(trimmed);
   if (!unit) {
-    alert(`„${trimmed}" ist keine bekannte Einheit. Erlaubt: g, kg, ml, l, Stück — oder leer.`);
+    alert(`„${trimmed}" ist keine bekannte Einheit. Erlaubt: g, ml, Stück, TL, EL, Prise — oder leer.`);
     return undefined;
   }
   return unit;
@@ -724,7 +670,6 @@ function newIngredientRow(ing) {
   return row;
 }
 
-// Keeps open rows in sync when a Zutat is renamed or deleted elsewhere.
 function refreshIngredientRows() {
   Array.from(ingredientsEditor.children).forEach((row) => row._combo?.refresh());
 }
@@ -811,7 +756,6 @@ recipeForm.addEventListener("submit", async (e) => {
   }
 });
 
-// init
 resetRecipeForm();
 resetZutatForm();
 updateGenerateAvailability();

@@ -1,14 +1,3 @@
-// ---------------------------------------------------------------
-// Zutat combobox
-//
-// A text input that only ever resolves to an existing Zutat. Typing
-// filters the catalog; blurring without a valid pick reverts to the
-// last valid value. When the query matches nothing exactly, a final
-// "+ „X" anlegen" option offers to create it.
-//
-// Self-contained: no Firestore, no DOM outside the element it builds.
-// ---------------------------------------------------------------
-
 export function zutatKey(name) {
   return (name || "")
     .toLowerCase()
@@ -46,9 +35,9 @@ export function createZutatCombobox({ value = null, getZutaten, onSelect, onCrea
 
   wrap.append(input, list);
 
-  let selectedId = null;    // the committed Zutat id, or null
-  let selectedLabel = "";   // last known name for selectedId
-  let options = [];         // [{ kind: "zutat", zutat } | { kind: "create", name }]
+  let selectedId = null;
+  let selectedLabel = "";
+  let options = [];
   let activeIndex = -1;
 
   function zutatById(zid) {
@@ -97,8 +86,6 @@ export function createZutatCombobox({ value = null, getZutaten, onSelect, onCrea
         li.textContent = `+ „${opt.name}" anlegen`;
       }
 
-      // mousedown, not click: click fires after blur, which would have
-      // already reverted the input.
       li.addEventListener("mousedown", (e) => {
         e.preventDefault();
         choose(i);
@@ -130,8 +117,6 @@ export function createZutatCombobox({ value = null, getZutaten, onSelect, onCrea
     input.removeAttribute("aria-activedescendant");
   }
 
-  // knownName covers the moment right after creation, before the
-  // Firestore snapshot carrying the new Zutat has arrived.
   function commit(zid, knownName) {
     selectedId = zid;
     selectedLabel = zid ? (labelFor(zid) || knownName || "") : "";
@@ -153,7 +138,6 @@ export function createZutatCombobox({ value = null, getZutaten, onSelect, onCrea
     if (newId) {
       commit(newId, opt.name);
     } else {
-      // creation cancelled or rejected: restore the previous pick
       revert();
       input.focus();
     }
@@ -166,7 +150,6 @@ export function createZutatCombobox({ value = null, getZutaten, onSelect, onCrea
   }
 
   input.addEventListener("input", () => {
-    // Typing invalidates the current pick until something is chosen again.
     if (selectedId && input.value !== selectedLabel) {
       selectedId = null;
       onSelect?.(null);
@@ -178,7 +161,6 @@ export function createZutatCombobox({ value = null, getZutaten, onSelect, onCrea
   input.addEventListener("focus", () => open(input.value));
 
   input.addEventListener("blur", () => {
-    // Let a pending mousedown on an option run first.
     setTimeout(() => {
       if (document.activeElement !== input) revert();
     }, 0);
@@ -213,11 +195,10 @@ export function createZutatCombobox({ value = null, getZutaten, onSelect, onCrea
     input,
     getValue: () => selectedId,
     setValue: (zid) => commit(zid || null),
-    // Catalog changed (rename, deletion): refresh the displayed label.
     refresh: () => {
       if (!selectedId) return;
       const current = zutatById(selectedId);
-      if (!current) return;   // not (yet) in the catalog: keep what we have
+      if (!current) return;
       selectedLabel = current.name;
       if (document.activeElement !== input) input.value = selectedLabel;
     },
