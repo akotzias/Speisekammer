@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Speisekammer — Wochenplan &amp; Einkaufsliste</title>
+<title>Speisekammer — Menü &amp; Einkaufsliste</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍲</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,23 +59,23 @@
 
     <section class="panel panel--accent" aria-labelledby="plan-heading">
       <div class="panel__head">
-        <h2 id="plan-heading">Wochenplan</h2>
+        <h2 id="plan-heading">Menü</h2>
       </div>
 
       <div class="plan-controls">
-        <button id="generateBtn" class="btn btn--primary btn--wide">Neuen Wochenplan würfeln</button>
+        <button id="generateBtn" class="btn btn--primary btn--wide">Neues Menü würfeln</button>
       </div>
 
-      <p class="empty-note" id="planEmpty">Noch kein Plan gewürfelt.</p>
+      <p class="empty-note" id="planEmpty">Noch kein Menü gewürfelt.</p>
 
-      <ol class="day-list" id="dayList"></ol>
+      <ol class="menu-list" id="menuList"></ol>
     </section>
 
     <section class="panel" aria-labelledby="shopping-heading">
       <div class="panel__head">
         <h2 id="shopping-heading">Einkaufsliste</h2>
       </div>
-      <p class="empty-note" id="shoppingEmpty">Erscheint, sobald ein Plan gewürfelt wurde.</p>
+      <p class="empty-note" id="shoppingEmpty">Erscheint, sobald ein Menü gewürfelt wurde.</p>
       <ul class="shopping-list" id="shoppingList"></ul>
       <h3 class="shopping-section" id="marktHeading" hidden>Markt</h3>
       <ul class="shopping-list" id="marktList" hidden></ul>

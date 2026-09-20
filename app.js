@@ -9,7 +9,7 @@ import {
 import { firebaseConfig } from "./firebase-config.js";
 import { createZutatCombobox, zutatKey } from "./zutat-combobox.js";
 
-const DAY_LABELS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+const MENU_SIZE = 3;
 const UNIT_OPTIONS = [
   { value: "g", label: "g" },
   { value: "ml", label: "ml" },
@@ -55,7 +55,7 @@ let editingZutatId = null;
 const recipeListEl = document.getElementById("recipeList");
 const recipeEmptyEl = document.getElementById("recipeEmpty");
 const recipeCountEl = document.getElementById("recipeCount");
-const dayListEl = document.getElementById("dayList");
+const menuListEl = document.getElementById("menuList");
 const planEmptyEl = document.getElementById("planEmpty");
 const shoppingListEl = document.getElementById("shoppingList");
 const shoppingEmptyEl = document.getElementById("shoppingEmpty");
@@ -209,32 +209,29 @@ function formatAmount(n) {
 }
 
 function renderPlan() {
-  dayListEl.innerHTML = "";
-  if (!currentPlan || !currentPlan.days || !currentPlan.days.length) {
+  menuListEl.innerHTML = "";
+  if (!currentPlan || !currentPlan.recipeIds || !currentPlan.recipeIds.length) {
     planEmptyEl.style.display = "block";
     return;
   }
   planEmptyEl.style.display = "none";
 
-  currentPlan.days.forEach((d) => {
+  currentPlan.recipeIds.forEach((recipeId) => {
     const li = document.createElement("li");
-    li.className = "day-row";
-    const label = document.createElement("span");
-    label.className = "day-row__label";
-    label.textContent = d.label;
+    li.className = "menu-row";
 
     const recipeEl = document.createElement("span");
-    recipeEl.className = "day-row__recipe";
-    const recipe = recipesById.get(d.recipeId);
+    recipeEl.className = "menu-row__recipe";
+    const recipe = recipesById.get(recipeId);
     if (recipe) {
       recipeEl.textContent = recipe.name;
     } else {
       recipeEl.textContent = "Rezept gelöscht";
-      recipeEl.classList.add("day-row__recipe--missing");
+      recipeEl.classList.add("menu-row__recipe--missing");
     }
 
-    li.append(label, recipeEl);
-    dayListEl.appendChild(li);
+    li.appendChild(recipeEl);
+    menuListEl.appendChild(li);
   });
 }
 
@@ -243,12 +240,12 @@ function renderShoppingList() {
   marktListEl.innerHTML = "";
   marktHeadingEl.hidden = true;
   marktListEl.hidden = true;
-  if (!currentPlan || !currentPlan.days || !currentPlan.days.length) {
+  if (!currentPlan || !currentPlan.recipeIds || !currentPlan.recipeIds.length) {
     shoppingEmptyEl.style.display = "block";
     return;
   }
 
-  const aggregated = aggregateIngredients(currentPlan.days);
+  const aggregated = aggregateIngredients(currentPlan.recipeIds);
   if (!aggregated.length) {
     shoppingEmptyEl.style.display = "block";
     return;
@@ -271,10 +268,10 @@ function renderShoppingList() {
   marktListEl.hidden = !hasMarkt;
 }
 
-function aggregateIngredients(days) {
+function aggregateIngredients(recipeIds) {
   const map = new Map();
-  days.forEach((d) => {
-    const recipe = recipesById.get(d.recipeId);
+  recipeIds.forEach((recipeId) => {
+    const recipe = recipesById.get(recipeId);
     if (!recipe) return;
     (recipe.ingredients || []).forEach((ing) => {
       const zutat = zutatenById.get(ing.zutatId);
@@ -321,19 +318,21 @@ generateBtn.addEventListener("click", async () => {
   generateBtn.disabled = true;
   generateBtn.textContent = "Würfle…";
 
-  const days = DAY_LABELS.map((label) => {
-    const choice = recipes[Math.floor(Math.random() * recipes.length)];
-    return { label, recipeId: choice.id };
-  });
+  const shuffled = recipes.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const recipeIds = shuffled.slice(0, MENU_SIZE).map((r) => r.id);
 
   try {
-    await setDoc(doc(db, "plan", "current"), { days });
+    await setDoc(doc(db, "plan", "current"), { recipeIds });
   } catch (e) {
     console.error(e);
-    alert("Der Plan konnte nicht gespeichert werden. Prüft eure Internetverbindung.");
+    alert("Das Menü konnte nicht gespeichert werden. Prüft eure Internetverbindung.");
   } finally {
     generateBtn.disabled = recipes.length === 0;
-    generateBtn.textContent = "Neuen Wochenplan würfeln";
+    generateBtn.textContent = "Neues Menü würfeln";
   }
 });
 
