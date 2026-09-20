@@ -365,6 +365,20 @@ input::placeholder{ color: var(--ink-faint); }
   flex-shrink: 0;
 }
 
+.shopping-section{
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin: 20px 0 6px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--mustard);
+}
+.shopping-section[hidden],
+.shopping-list[hidden]{ display: none; }
+
 .site-foot{
   margin-top: 40px;
   text-align: center;
@@ -432,10 +446,25 @@ input::placeholder{ color: var(--ink-faint); }
 
 .zutat-form{
   display: grid;
-  grid-template-columns: 1fr 110px auto auto;
+  grid-template-columns: 1fr 110px auto auto auto;
   gap: 8px;
   align-items: center;
   margin-bottom: 14px;
+}
+.zutat-markt{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ink-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.zutat-markt input{
+  accent-color: var(--mustard);
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 .zutat-list{
   list-style: none;
@@ -465,6 +494,15 @@ input::placeholder{ color: var(--ink-faint); }
   font-size: 12px;
   color: var(--mustard-ink);
   background: rgba(217,154,43,.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.zutat-item__markt{
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #33401C;
+  background: rgba(111,127,72,.25);
   border-radius: 4px;
   padding: 1px 6px;
   white-space: nowrap;

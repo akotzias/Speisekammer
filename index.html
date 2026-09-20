@@ -77,6 +77,8 @@
       </div>
       <p class="empty-note" id="shoppingEmpty">Erscheint, sobald ein Plan gewürfelt wurde.</p>
       <ul class="shopping-list" id="shoppingList"></ul>
+      <h3 class="shopping-section" id="marktHeading" hidden>Markt</h3>
+      <ul class="shopping-list" id="marktList" hidden></ul>
     </section>
 
     <section class="panel" aria-labelledby="zutaten-heading">
@@ -89,6 +91,10 @@
         <input type="text" id="zutatName" placeholder="Neue Zutat, z. B. Ei" required>
         <select id="zutatUnit" aria-label="Einheit">
         </select>
+        <label class="zutat-markt">
+          <input type="checkbox" id="zutatMarkt">
+          <span>Markt</span>
+        </label>
         <button type="submit" class="btn btn--primary btn--small" id="zutatSubmit">Hinzufügen</button>
         <button type="button" class="btn btn--ghost btn--small" id="zutatCancel" hidden>Abbrechen</button>
       </form>

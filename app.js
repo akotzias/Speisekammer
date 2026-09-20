@@ -59,6 +59,8 @@ const dayListEl = document.getElementById("dayList");
 const planEmptyEl = document.getElementById("planEmpty");
 const shoppingListEl = document.getElementById("shoppingList");
 const shoppingEmptyEl = document.getElementById("shoppingEmpty");
+const marktHeadingEl = document.getElementById("marktHeading");
+const marktListEl = document.getElementById("marktList");
 const generateBtn = document.getElementById("generateBtn");
 
 const addRecipeDetails = document.getElementById("addRecipeDetails");
@@ -74,6 +76,7 @@ const zutatCountEl = document.getElementById("zutatCount");
 const zutatForm = document.getElementById("zutatForm");
 const zutatNameInput = document.getElementById("zutatName");
 const zutatUnitSelect = document.getElementById("zutatUnit");
+const zutatMarktInput = document.getElementById("zutatMarkt");
 const zutatSubmitBtn = document.getElementById("zutatSubmit");
 const zutatCancelBtn = document.getElementById("zutatCancel");
 
@@ -237,6 +240,9 @@ function renderPlan() {
 
 function renderShoppingList() {
   shoppingListEl.innerHTML = "";
+  marktListEl.innerHTML = "";
+  marktHeadingEl.hidden = true;
+  marktListEl.hidden = true;
   if (!currentPlan || !currentPlan.days || !currentPlan.days.length) {
     shoppingEmptyEl.style.display = "block";
     return;
@@ -257,8 +263,12 @@ function renderShoppingList() {
     const name = document.createElement("span");
     name.textContent = item.name;
     li.append(amt, name);
-    shoppingListEl.appendChild(li);
+    (item.markt ? marktListEl : shoppingListEl).appendChild(li);
   });
+
+  const hasMarkt = marktListEl.children.length > 0;
+  marktHeadingEl.hidden = !hasMarkt;
+  marktListEl.hidden = !hasMarkt;
 }
 
 function aggregateIngredients(days) {
@@ -272,7 +282,8 @@ function aggregateIngredients(days) {
 
       if (!map.has(ing.zutatId)) {
         map.set(ing.zutatId, {
-          name: zutat.name, unit: zutat.unit, amount: 0, hasAmount: false, plainCount: 0
+          name: zutat.name, unit: zutat.unit, markt: !!zutat.markt,
+          amount: 0, hasAmount: false, plainCount: 0
         });
       }
       const entry = map.get(ing.zutatId);
@@ -296,7 +307,7 @@ function aggregateIngredients(days) {
         segments.push(`${entry.plainCount}×`);
       }
       const display = segments.length ? segments.join(" + ") : "—";
-      return { name: entry.name, display };
+      return { name: entry.name, display, markt: entry.markt };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
@@ -364,7 +375,7 @@ function findSimilarZutaten(key) {
   });
 }
 
-async function createZutat(rawName, unit) {
+async function createZutat(rawName, unit, markt = false) {
   const name = (rawName || "").trim();
   const key = zutatKey(name);
   if (!key) {
@@ -389,6 +400,7 @@ async function createZutat(rawName, unit) {
       name,
       nameKey: key,
       unit: normalizeUnit(unit),
+      markt: !!markt,
       createdAt: serverTimestamp()
     });
     return ref.id;
@@ -461,7 +473,7 @@ async function mergeZutaten(source, target) {
   }
 }
 
-async function saveZutatEdit(zutatId, rawName, unit) {
+async function saveZutatEdit(zutatId, rawName, unit, markt) {
   const zutat = zutatenById.get(zutatId);
   if (!zutat) return false;
   if (!recipesLoaded) {
@@ -494,7 +506,7 @@ async function saveZutatEdit(zutatId, rawName, unit) {
   }
 
   try {
-    await updateDoc(doc(db, "zutaten", zutatId), { name, nameKey: key, unit: nextUnit });
+    await updateDoc(doc(db, "zutaten", zutatId), { name, nameKey: key, unit: nextUnit, markt: !!markt });
     return true;
   } catch (err) {
     console.error(err);
@@ -538,6 +550,13 @@ function renderZutaten() {
       unit.className = "zutat-item__unit";
       unit.textContent = unitLabel;
       li.appendChild(unit);
+    }
+
+    if (z.markt) {
+      const markt = document.createElement("span");
+      markt.className = "zutat-item__markt";
+      markt.textContent = "Markt";
+      li.appendChild(markt);
     }
 
     const used = recipesLoaded ? zutatUsageCount(z.id) : 0;
@@ -584,6 +603,7 @@ function startEditZutat(z) {
   editingZutatId = z.id;
   zutatNameInput.value = z.name || "";
   zutatUnitSelect.value = normalizeUnit(z.unit);
+  zutatMarktInput.checked = !!z.markt;
   zutatSubmitBtn.textContent = "Speichern";
   zutatCancelBtn.hidden = false;
   zutatNameInput.focus();
@@ -596,10 +616,14 @@ zutatForm.addEventListener("submit", async (e) => {
   zutatSubmitBtn.disabled = true;
   try {
     if (editingZutatId) {
-      const ok = await saveZutatEdit(editingZutatId, zutatNameInput.value, zutatUnitSelect.value);
+      const ok = await saveZutatEdit(
+        editingZutatId, zutatNameInput.value, zutatUnitSelect.value, zutatMarktInput.checked
+      );
       if (ok) resetZutatForm();
     } else {
-      const id = await createZutat(zutatNameInput.value, zutatUnitSelect.value);
+      const id = await createZutat(
+        zutatNameInput.value, zutatUnitSelect.value, zutatMarktInput.checked
+      );
       if (id) resetZutatForm();
     }
   } finally {
