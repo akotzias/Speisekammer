@@ -9,7 +9,7 @@ import {
 import { firebaseConfig } from "./firebase-config.js";
 import { createZutatCombobox, zutatKey } from "./zutat-combobox.js";
 
-const DAY_LABELS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const DAY_LABELS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 const UNIT_OPTIONS = [
   { value: "", label: "keine Einheit" },
   { value: "g", label: "g" },
