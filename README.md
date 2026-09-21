@@ -1,1 +1,1 @@
-# Speisekammer
+# Vorratskammer

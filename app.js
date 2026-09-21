@@ -450,7 +450,7 @@ backupBtn.addEventListener("click", () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `speisekammer-${backupStamp(now)}.json`;
+  link.download = `vorratskammer-${backupStamp(now)}.json`;
   link.click();
   URL.revokeObjectURL(url);
 });
