@@ -184,6 +184,33 @@ body{
   font-variant-numeric: tabular-nums;
 }
 
+/* Aufklappbare Panel-Überschrift (Zutaten). */
+.panel__toggle{
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.panel__caret{
+  display: inline-block;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--ink);
+  opacity: .75;
+  transition: transform .15s ease, opacity .15s ease;
+}
+.panel__toggle:hover .panel__caret{ opacity: 1; }
+[data-zutaten="closed"] #zutatenBody{ display: none; }
+[data-zutaten="closed"] #zutatenPanel .panel__head{ margin-bottom: 0; }
+[data-zutaten="closed"] #zutatenToggle .panel__caret{ transform: rotate(-90deg); }
+
 .empty-note{
   color: var(--ink-faint);
   font-size: 14.5px;

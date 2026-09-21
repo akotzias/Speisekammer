@@ -49,6 +49,27 @@ try {
 applyStyle(savedStyle);
 styleSelect.addEventListener("change", () => applyStyle(styleSelect.value));
 
+// Zutaten-Panel auf- und zuklappen. Der Zustand wird auch vor dem ersten Paint
+// im Inline-Skript in index.html gesetzt — Schlüssel dort synchron halten.
+const ZUTATEN_KEY = "speisekammer:zutaten";
+const zutatenToggle = document.getElementById("zutatenToggle");
+
+function setZutatenOpen(open) {
+  if (open) delete document.documentElement.dataset.zutaten;
+  else document.documentElement.dataset.zutaten = "closed";
+  zutatenToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  try {
+    localStorage.setItem(ZUTATEN_KEY, open ? "open" : "closed");
+  } catch (err) {
+    /* Zustand gilt für diese Sitzung, wird nur nicht gespeichert. */
+  }
+}
+
+setZutatenOpen(document.documentElement.dataset.zutaten !== "closed");
+zutatenToggle.addEventListener("click", () => {
+  setZutatenOpen(document.documentElement.dataset.zutaten === "closed");
+});
+
 const syncIndicator = document.getElementById("syncIndicator");
 const syncLabel = syncIndicator.querySelector(".sync-label");
 

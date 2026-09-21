@@ -18,6 +18,14 @@
   } catch (e) {
     document.documentElement.dataset.style = "markt";
   }
+  // Same for the collapsed Zutaten panel — keep the key in sync with app.js.
+  try {
+    if (localStorage.getItem("speisekammer:zutaten") === "closed") {
+      document.documentElement.dataset.zutaten = "closed";
+    }
+  } catch (e) {
+    /* kein Zugriff auf localStorage — Zutaten bleiben aufgeklappt */
+  }
 </script>
 </head>
 <body>
@@ -103,27 +111,33 @@
       <ul class="shopping-list" id="marktList" hidden></ul>
     </section>
 
-    <section class="panel" aria-labelledby="zutaten-heading">
+    <section class="panel" id="zutatenPanel" aria-labelledby="zutaten-heading">
       <div class="panel__head">
-        <h2 id="zutaten-heading">Zutaten</h2>
+        <button type="button" class="panel__toggle" id="zutatenToggle"
+                aria-expanded="true" aria-controls="zutatenBody">
+          <span class="panel__caret" aria-hidden="true">▼</span>
+          <h2 id="zutaten-heading">Zutaten</h2>
+        </button>
         <span class="count" id="zutatCount">0</span>
       </div>
 
-      <form id="zutatForm" class="zutat-form">
-        <input type="text" id="zutatName" placeholder="Neue Zutat, z. B. Ei" required>
-        <select id="zutatUnit" aria-label="Einheit">
-        </select>
-        <label class="zutat-markt">
-          <input type="checkbox" id="zutatMarkt">
-          <span>Markt</span>
-        </label>
-        <button type="submit" class="btn btn--primary btn--small" id="zutatSubmit">Hinzufügen</button>
-        <button type="button" class="btn btn--ghost btn--small" id="zutatCancel" hidden>Abbrechen</button>
-      </form>
+      <div class="panel__body" id="zutatenBody">
+        <form id="zutatForm" class="zutat-form">
+          <input type="text" id="zutatName" placeholder="Neue Zutat, z. B. Ei" required>
+          <select id="zutatUnit" aria-label="Einheit">
+          </select>
+          <label class="zutat-markt">
+            <input type="checkbox" id="zutatMarkt">
+            <span>Markt</span>
+          </label>
+          <button type="submit" class="btn btn--primary btn--small" id="zutatSubmit">Hinzufügen</button>
+          <button type="button" class="btn btn--ghost btn--small" id="zutatCancel" hidden>Abbrechen</button>
+        </form>
 
-      <p class="empty-note" id="zutatEmpty">Noch keine Zutaten. Leg oben die erste an.</p>
+        <p class="empty-note" id="zutatEmpty">Noch keine Zutaten. Leg oben die erste an.</p>
 
-      <ul class="zutat-list" id="zutatenList"></ul>
+        <ul class="zutat-list" id="zutatenList"></ul>
+      </div>
     </section>
 
   </main>
