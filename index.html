@@ -30,7 +30,24 @@
 </head>
 <body>
 
-<div class="wrap">
+<div class="login-screen" id="loginScreen">
+  <form id="loginForm" class="login-form">
+    <h1>Speisekammer</h1>
+    <p class="login-form__hint">Bitte anmelden</p>
+    <label class="field">
+      <span>E-Mail</span>
+      <input type="email" id="loginEmail" required autocomplete="username">
+    </label>
+    <label class="field">
+      <span>Passwort</span>
+      <input type="password" id="loginPassword" required autocomplete="current-password">
+    </label>
+    <p class="login-form__error" id="loginError" hidden></p>
+    <button type="submit" class="btn btn--primary btn--wide" id="loginSubmit">Anmelden</button>
+  </form>
+</div>
+
+<div class="wrap" id="appWrap" hidden>
 
   <header class="site-head">
     <div class="site-head__mark">🍲🍳🥘</div>
@@ -51,6 +68,7 @@
       </label>
       <button type="button" id="backupBtn" class="btn btn--ghost btn--small"
               title="Alle Daten als JSON-Datei herunterladen" disabled>Sicherung</button>
+      <button type="button" id="logoutBtn" class="btn btn--ghost btn--small">Abmelden</button>
     </div>
   </header>
 

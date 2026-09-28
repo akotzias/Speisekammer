@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, deleteDoc, setDoc, updateDoc,
@@ -78,17 +78,45 @@ function setSyncState(state, label) {
   syncLabel.textContent = label;
 }
 
+const loginScreen = document.getElementById("loginScreen");
+const appWrap = document.getElementById("appWrap");
+const loginForm = document.getElementById("loginForm");
+const loginEmailInput = document.getElementById("loginEmail");
+const loginPasswordInput = document.getElementById("loginPassword");
+const loginError = document.getElementById("loginError");
+const loginSubmitBtn = document.getElementById("loginSubmit");
+const logoutBtn = document.getElementById("logoutBtn");
+
 setSyncState("offline", "verbinde…");
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    loginScreen.hidden = true;
+    appWrap.hidden = false;
     setSyncState("online", "synchronisiert");
     startSubscriptions();
+  } else {
+    loginScreen.hidden = false;
+    appWrap.hidden = true;
   }
 });
-signInAnonymously(auth).catch((err) => {
-  console.error(err);
-  setSyncState("offline", "Verbindung fehlgeschlagen");
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginError.hidden = true;
+  loginSubmitBtn.disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, loginEmailInput.value.trim(), loginPasswordInput.value);
+    loginForm.reset();
+  } catch (err) {
+    console.error(err);
+    loginError.textContent = "Anmeldung fehlgeschlagen. E-Mail und Passwort prüfen.";
+    loginError.hidden = false;
+  } finally {
+    loginSubmitBtn.disabled = false;
+  }
 });
+
+logoutBtn.addEventListener("click", () => signOut(auth));
 
 let recipes = [];
 let zutaten = [];
