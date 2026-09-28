@@ -110,7 +110,9 @@ const loginSubmitBtn = document.getElementById("loginSubmit");
 const logoutBtn = document.getElementById("logoutBtn");
 
 function showApp() {
-  loginScreen.hidden = true;
+  // Ganz aus dem DOM entfernen statt nur zu verstecken — sonst lassen
+  // Passwortmanager-Erweiterungen ihr Icon auf der alten Position zurück.
+  loginScreen.remove();
   appWrap.hidden = false;
   setSyncState("online", "synchronisiert");
   startSubscriptions();
@@ -121,7 +123,8 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     showApp();
   } else {
-    loginScreen.hidden = false;
+    if (!loginScreen.isConnected) document.body.insertBefore(loginScreen, appWrap);
+    loginForm.reset();
     appWrap.hidden = true;
   }
 });
