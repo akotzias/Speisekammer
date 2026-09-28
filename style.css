@@ -221,6 +221,7 @@ body{
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
 }
+.panel__head .list-toggle{ align-self: center; }
 
 /* Aufklappbare Panel-Überschrift (Zutaten). */
 .panel__toggle{
@@ -570,7 +571,8 @@ input::placeholder{ color: var(--ink-faint); }
   align-items: center;
   margin-bottom: 14px;
 }
-.zutat-markt{
+.zutat-markt,
+.list-toggle{
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -579,7 +581,8 @@ input::placeholder{ color: var(--ink-faint); }
   cursor: pointer;
   white-space: nowrap;
 }
-.zutat-markt input{
+.zutat-markt input,
+.list-toggle input{
   accent-color: var(--mustard);
   width: 16px;
   height: 16px;

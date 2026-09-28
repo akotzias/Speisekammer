@@ -72,6 +72,26 @@ zutatenToggle.addEventListener("click", () => {
   setZutatenOpen(document.documentElement.dataset.zutaten === "closed");
 });
 
+// Abgehakte Posten in der Einkaufsliste aus-/einblenden.
+const HIDE_CHECKED_KEY = "speisekammer:hideChecked";
+const hideCheckedToggle = document.getElementById("hideCheckedToggle");
+
+let hideCheckedSaved = false;
+try {
+  hideCheckedSaved = localStorage.getItem(HIDE_CHECKED_KEY) === "true";
+} catch (err) {
+  /* kein Zugriff auf localStorage — Standard: alles anzeigen */
+}
+hideCheckedToggle.checked = hideCheckedSaved;
+hideCheckedToggle.addEventListener("change", () => {
+  try {
+    localStorage.setItem(HIDE_CHECKED_KEY, hideCheckedToggle.checked ? "true" : "false");
+  } catch (err) {
+    /* Zustand gilt für diese Sitzung, wird nur nicht gespeichert. */
+  }
+  renderShoppingList();
+});
+
 const syncIndicator = document.getElementById("syncIndicator");
 const syncLabel = syncIndicator.querySelector(".sync-label");
 
@@ -352,6 +372,7 @@ function renderShoppingList() {
 
   aggregated.forEach((item) => {
     const isChecked = !!checked[item.zutatId];
+    if (isChecked && hideCheckedToggle.checked) return;
 
     const li = document.createElement("li");
     li.className = "shopping-item";
