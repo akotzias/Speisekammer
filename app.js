@@ -87,13 +87,17 @@ const loginError = document.getElementById("loginError");
 const loginSubmitBtn = document.getElementById("loginSubmit");
 const logoutBtn = document.getElementById("logoutBtn");
 
+function showApp() {
+  loginScreen.hidden = true;
+  appWrap.hidden = false;
+  setSyncState("online", "synchronisiert");
+  startSubscriptions();
+}
+
 setSyncState("offline", "verbinde…");
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    loginScreen.hidden = true;
-    appWrap.hidden = false;
-    setSyncState("online", "synchronisiert");
-    startSubscriptions();
+    showApp();
   } else {
     loginScreen.hidden = false;
     appWrap.hidden = true;
@@ -107,6 +111,7 @@ loginForm.addEventListener("submit", async (e) => {
   try {
     await signInWithEmailAndPassword(auth, loginEmailInput.value.trim(), loginPasswordInput.value);
     loginForm.reset();
+    showApp();
   } catch (err) {
     console.error(err);
     loginError.textContent = "Anmeldung fehlgeschlagen. E-Mail und Passwort prüfen.";
