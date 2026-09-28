@@ -90,18 +90,14 @@ const loginSubmitBtn = document.getElementById("loginSubmit");
 const logoutBtn = document.getElementById("logoutBtn");
 
 function showApp() {
-  console.log("[login] showApp: start");
   loginScreen.hidden = true;
   appWrap.hidden = false;
   setSyncState("online", "synchronisiert");
-  console.log("[login] showApp: calling startSubscriptions");
   startSubscriptions();
-  console.log("[login] showApp: done");
 }
 
 setSyncState("offline", "verbinde…");
 onAuthStateChanged(auth, (user) => {
-  console.log("[login] onAuthStateChanged fired, user:", user && user.uid);
   if (user) {
     showApp();
   } else {
@@ -112,17 +108,13 @@ onAuthStateChanged(auth, (user) => {
 
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  console.log("[login] submit: calling signInWithEmailAndPassword");
   loginError.hidden = true;
   loginSubmitBtn.disabled = true;
   try {
     await signInWithEmailAndPassword(auth, loginEmailInput.value.trim(), loginPasswordInput.value);
-    console.log("[login] submit: signIn resolved");
     loginForm.reset();
     showApp();
-    console.log("[login] submit: showApp returned");
   } catch (err) {
-    console.log("[login] submit: signIn rejected");
     console.error(err);
     loginError.textContent = "Anmeldung fehlgeschlagen. E-Mail und Passwort prüfen.";
     loginError.hidden = false;
