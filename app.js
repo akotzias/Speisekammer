@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  getAuth, setPersistence, browserLocalPersistence,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, addDoc, deleteDoc, setDoc, updateDoc,
@@ -22,6 +23,7 @@ const UNIT_OPTIONS = [
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+setPersistence(auth, browserLocalPersistence).catch((err) => console.error(err));
 
 const STYLE_KEY = "speisekammer:style";
 // STYLES[0] ist der Standard — auch im Inline-Skript in index.html hinterlegt.
