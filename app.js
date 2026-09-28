@@ -125,6 +125,7 @@ onAuthStateChanged(auth, (user) => {
   } else {
     if (!loginScreen.isConnected) document.body.insertBefore(loginScreen, appWrap);
     loginForm.reset();
+    loginScreen.hidden = false;
     appWrap.hidden = true;
   }
 });
